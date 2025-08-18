@@ -11,6 +11,7 @@ A comprehensive real-time parking visualization system for San José State Unive
 - **Trend Analysis**: Historical pattern analysis with peak/off-peak hour identification
 - **Responsive Design**: Works seamlessly on desktop and mobile devices
 - **Auto-refresh**: Live updates every 5 minutes with manual refresh option
+- **Analytics**: Vercel Analytics for visitor tracking and usage insights
 
 ## 🏗️ Tech Stack
 
