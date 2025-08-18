@@ -41,10 +41,10 @@ interface TrendData {
 
 interface HistoricalDataPoint {
   timestamp: string;
-  avg_utilization: number;
-  max_utilization: number;
-  min_utilization: number;
-  last_utilization: number;
+  avg_utilization: number | null;
+  max_utilization: number | null;
+  min_utilization: number | null;
+  last_utilization: number | null;
 }
 
 export function ParkingDashboard() {
@@ -211,7 +211,7 @@ export function ParkingDashboard() {
                 <TrendingUp className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{avgUtilization.toFixed(1)}%</div>
+                <div className="text-2xl font-bold">{(avgUtilization ?? 0).toFixed(1)}%</div>
                 <p className="text-xs text-muted-foreground">
                   Across all garages
                 </p>

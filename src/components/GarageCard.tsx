@@ -11,12 +11,12 @@ interface GarageCardProps {
   garage_id: string;
   garage_name: string;
   address: string;
-  occupied_percentage: number;
+  occupied_percentage: number | null | undefined;
   capacity?: number;
   occupied_spaces?: number;
   last_updated: string;
   trend?: 'increasing' | 'decreasing' | 'stable';
-  nextHourPrediction?: number;
+  nextHourPrediction?: number | null | undefined;
 }
 
 export function GarageCard({
@@ -75,7 +75,7 @@ export function GarageCard({
     }
   };
 
-  const level = getUtilizationLevel(occupied_percentage);
+  const level = getUtilizationLevel(occupied_percentage ?? 0);
   const progressColor = getUtilizationColor(level);
 
   return (
@@ -85,7 +85,7 @@ export function GarageCard({
           <CardTitle className="text-lg font-semibold flex items-center gap-2">
             <Car className="h-5 w-5 text-primary" />
             {garage_name}
-            {getUtilizationBadge(occupied_percentage)}
+            {getUtilizationBadge(occupied_percentage ?? 0)}
           </CardTitle>
           {trend && (
             <Tooltip>
@@ -108,17 +108,17 @@ export function GarageCard({
         <div className="space-y-2">
           <div className="flex justify-between items-center">
             <span className="text-2xl font-bold">
-              {occupied_percentage.toFixed(1)}%
+              {(occupied_percentage ?? 0).toFixed(1)}%
             </span>
             {capacity && (
               <span className="text-sm text-muted-foreground">
-                {Math.round((occupied_percentage * capacity) / 100)} / {capacity} spaces
+                {Math.round(((occupied_percentage ?? 0) * capacity) / 100)} / {capacity} spaces
               </span>
             )}
           </div>
           
           <Progress 
-            value={occupied_percentage} 
+            value={occupied_percentage ?? 0} 
             className={`h-3 ${progressColor}`}
           />
         </div>
@@ -128,10 +128,10 @@ export function GarageCard({
             <div className="flex justify-between items-center text-sm">
               <span className="text-muted-foreground">Next hour prediction:</span>
               <span className="font-medium">
-                {nextHourPrediction.toFixed(1)}%
-                {nextHourPrediction > occupied_percentage ? (
+                {(nextHourPrediction ?? 0).toFixed(1)}%
+                {(nextHourPrediction ?? 0) > (occupied_percentage ?? 0) ? (
                   <TrendingUp className="inline h-3 w-3 ml-1 text-red-500" />
-                ) : nextHourPrediction < occupied_percentage ? (
+                ) : (nextHourPrediction ?? 0) < (occupied_percentage ?? 0) ? (
                   <TrendingDown className="inline h-3 w-3 ml-1 text-green-500" />
                 ) : (
                   <Minus className="inline h-3 w-3 ml-1 text-blue-500" />

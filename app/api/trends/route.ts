@@ -37,10 +37,10 @@ export async function GET(request: NextRequest) {
       trend_analysis: trendAnalysis,
       historical_data: aggregatedData.map(row => ({
         timestamp: row.timestamp,
-        avg_utilization: parseFloat(row.avg_utilization || 0),
-        max_utilization: parseFloat(row.max_utilization || 0),
-        min_utilization: parseFloat(row.min_utilization || 0),
-        last_utilization: parseFloat(row.last_utilization || 0)
+        avg_utilization: row.avg_utilization ? parseFloat(row.avg_utilization) : null,
+        max_utilization: row.max_utilization ? parseFloat(row.max_utilization) : null,
+        min_utilization: row.min_utilization ? parseFloat(row.min_utilization) : null,
+        last_utilization: row.last_utilization ? parseFloat(row.last_utilization) : null
       })),
       generated_at: new Date().toISOString()
     });

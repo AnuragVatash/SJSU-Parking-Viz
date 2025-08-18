@@ -6,11 +6,11 @@ import { format, parseISO } from "date-fns";
 
 interface ChartDataPoint {
   timestamp: string;
-  avg_utilization?: number;
-  max_utilization?: number;
-  min_utilization?: number;
-  last_utilization?: number;
-  predicted_utilization?: number;
+  avg_utilization?: number | null;
+  max_utilization?: number | null;
+  min_utilization?: number | null;
+  last_utilization?: number | null;
+  predicted_utilization?: number | null;
 }
 
 interface ParkingChartProps {
@@ -46,7 +46,7 @@ export function ParkingChart({
   ].sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
 
   const formatTooltipValue = (value: any, name: string) => {
-    if (value === null || value === undefined) return ['--', name];
+    if (value === null || value === undefined || isNaN(Number(value))) return ['--', name];
     return [`${Number(value).toFixed(1)}%`, name];
   };
 
