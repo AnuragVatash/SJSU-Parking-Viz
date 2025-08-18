@@ -37,7 +37,7 @@ export class ParkingScraper {
       
       if (isProduction) {
         // In production, use our Edge fetcher to avoid SSL issues
-        const edgeFetcherUrl = `https://${process.env.VERCEL_URL}/api/_sjsu-fetch`;
+        const edgeFetcherUrl = `https://${process.env.VERCEL_URL}/api/sjsu-fetch`;
         console.log(`Using Edge fetcher: ${edgeFetcherUrl}`);
         
         const response = await fetch(edgeFetcherUrl, {
