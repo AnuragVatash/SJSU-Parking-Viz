@@ -3,8 +3,9 @@
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle, XCircle, Clock, Database, Activity } from "lucide-react";
+import { CheckCircle, XCircle, Clock, Database, Activity, ArrowLeft } from "lucide-react";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { Button } from "@/components/ui/button";
 
 interface SystemStatus {
   configured: boolean;
@@ -60,12 +61,23 @@ export default function StatusPage() {
   return (
     <div className="min-h-screen bg-background p-6">
       <div className="container mx-auto max-w-4xl">
-        <div className="mb-8 flex justify-between items-start">
+        <div className="mb-8">
+          <div className="flex items-center justify-between mb-4">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => window.location.href = '/'}
+              className="flex items-center gap-2 text-muted-foreground hover:text-foreground"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Back to Dashboard
+            </Button>
+            <ThemeToggle />
+          </div>
           <div>
             <h1 className="text-4xl font-bold mb-2">System Status</h1>
             <p className="text-muted-foreground">SJSU Parking Visualization System Health Check</p>
           </div>
-          <ThemeToggle />
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
