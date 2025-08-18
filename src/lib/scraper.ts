@@ -61,36 +61,39 @@ export class ParkingScraper {
       
       const garages: ScrapedGarageData[] = [];
       
-      // Find garage sections
-      $('.garage').each((index, element) => {
-        const $garage = $(element);
+      // Get all garage elements by type (they're not grouped in individual containers)
+      const garageNames = $('.garage__name').map((i, el) => $(el).text().trim()).get();
+      const garageAddresses = $('.garage__address').map((i, el) => ({
+        address: $(el).text().trim(),
+        mapUrl: $(el).attr('href')
+      })).get();
+      const garageFullness = $('.garage__fullness').map((i, el) => {
+        const fullnessText = $(el).text().trim();
+        return parseFloat(fullnessText.replace('%', '').trim()) || 0;
+      }).get();
+      
+      // Pair them up by index
+      const maxLength = Math.min(garageNames.length, garageAddresses.length, garageFullness.length);
+      
+      for (let i = 0; i < maxLength; i++) {
+        const garageName = garageNames[i];
+        const addressInfo = garageAddresses[i];
+        const occupiedPercentage = garageFullness[i];
         
-        // Extract garage name (removing extra spaces and line breaks)
-        const garageName = $garage.find('.garage__name').text().trim();
-        
-        // Extract address from the link
-        const addressLink = $garage.find('.garage__address');
-        const address = addressLink.text().trim();
-        const mapUrl = addressLink.attr('href');
-        
-        // Extract fullness percentage
-        const fullnessText = $garage.find('.garage__fullness').text().trim();
-        const occupiedPercentage = parseFloat(fullnessText.replace('%', '').trim()) || 0;
-        
-        if (garageName && address) {
+        if (garageName && addressInfo.address) {
           const garageId = this.generateGarageId(garageName);
           
           garages.push({
             garage_id: garageId,
             garage_name: garageName,
-            address: address,
+            address: addressInfo.address,
             occupied_percentage: occupiedPercentage,
-            map_url: mapUrl
+            map_url: addressInfo.mapUrl
           });
           
-          console.log(`Scraped: ${garageName} - ${occupiedPercentage}% (${address})`);
+          console.log(`Scraped: ${garageName} - ${occupiedPercentage}% (${addressInfo.address})`);
         }
-      });
+      }
 
       if (garages.length === 0) {
         console.warn('No garage data found. HTML structure might have changed.');
