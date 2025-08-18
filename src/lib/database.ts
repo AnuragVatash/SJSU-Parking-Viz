@@ -85,7 +85,7 @@ export async function initializeDatabase() {
           SELECT 
             garage_id,
             garage_name,
-            time_bucket('5 minutes', timestamp) AS bucket,
+            time_bucket(INTERVAL '5 minutes', timestamp) AS bucket,
             avg(occupied_percentage) AS avg_utilization,
             max(occupied_percentage) AS max_utilization,
             min(occupied_percentage) AS min_utilization,
@@ -100,7 +100,7 @@ export async function initializeDatabase() {
           SELECT 
             garage_id,
             garage_name,
-            time_bucket('1 hour', timestamp) AS bucket,
+            time_bucket(INTERVAL '1 hour', timestamp) AS bucket,
             avg(occupied_percentage) AS avg_utilization,
             max(occupied_percentage) AS max_utilization,
             min(occupied_percentage) AS min_utilization,
@@ -260,20 +260,41 @@ export async function getAggregatedData(
       return result.rows;
     } else {
       // Use regular PostgreSQL with date_trunc for aggregation
-      const truncInterval = interval === '5min' ? '5 minutes' : '1 hour';
-      const query = `
-        SELECT 
-          date_trunc('${truncInterval}', timestamp) as timestamp,
-          avg(occupied_percentage) as avg_utilization,
-          max(occupied_percentage) as max_utilization,
-          min(occupied_percentage) as min_utilization,
-          (array_agg(occupied_percentage ORDER BY timestamp DESC))[1] as last_utilization
-        FROM garage_readings
-        WHERE garage_id = $1 
-          AND timestamp >= NOW() - INTERVAL '${hours} hours'
-        GROUP BY date_trunc('${truncInterval}', timestamp)
-        ORDER BY timestamp;
-      `;
+      let query;
+      
+      if (interval === '5min') {
+        // For 5-minute intervals, use date_trunc to minute then group by 5-minute buckets
+        query = `
+          SELECT 
+            date_trunc('hour', timestamp) + 
+            INTERVAL '5 minutes' * FLOOR(EXTRACT(minute FROM timestamp) / 5) as timestamp,
+            avg(occupied_percentage) as avg_utilization,
+            max(occupied_percentage) as max_utilization,
+            min(occupied_percentage) as min_utilization,
+            (array_agg(occupied_percentage ORDER BY timestamp DESC))[1] as last_utilization
+          FROM garage_readings
+          WHERE garage_id = $1 
+            AND timestamp >= NOW() - INTERVAL '${hours} hours'
+          GROUP BY date_trunc('hour', timestamp) + 
+                   INTERVAL '5 minutes' * FLOOR(EXTRACT(minute FROM timestamp) / 5)
+          ORDER BY timestamp;
+        `;
+      } else {
+        // For hourly intervals, use date_trunc with 'hour'
+        query = `
+          SELECT 
+            date_trunc('hour', timestamp) as timestamp,
+            avg(occupied_percentage) as avg_utilization,
+            max(occupied_percentage) as max_utilization,
+            min(occupied_percentage) as min_utilization,
+            (array_agg(occupied_percentage ORDER BY timestamp DESC))[1] as last_utilization
+          FROM garage_readings
+          WHERE garage_id = $1 
+            AND timestamp >= NOW() - INTERVAL '${hours} hours'
+          GROUP BY date_trunc('hour', timestamp)
+          ORDER BY timestamp;
+        `;
+      }
       
       const result = await client.query(query, [garageId]);
       return result.rows;
