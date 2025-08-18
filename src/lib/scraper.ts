@@ -30,33 +30,41 @@ export class ParkingScraper {
     try {
       console.log(`Fetching parking data from: ${this.baseUrl}`);
       
-      // Configure fetch options with SSL handling for production
-      const fetchOptions: RequestInit = {
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-          'Accept-Language': 'en-US,en;q=0.5',
-          'Accept-Encoding': 'gzip, deflate, br',
-          'Connection': 'keep-alive',
-        },
-        method: 'GET',
-      };
-
-      // In Node.js environments (like Vercel), add SSL configuration
-      if (typeof window === 'undefined') {
-        const https = await import('https');
-        (fetchOptions as any).agent = new https.Agent({
-          rejectUnauthorized: false // Allow self-signed certificates
-        });
-      }
+      // Use Edge runtime fetcher to avoid SSL certificate issues in Node.js
+      const isProduction = typeof window === 'undefined' && process.env.VERCEL_URL;
       
-      const response = await fetch(this.baseUrl, fetchOptions);
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+      let html: string;
+      
+      if (isProduction) {
+        // In production, use our Edge fetcher to avoid SSL issues
+        const edgeFetcherUrl = `https://${process.env.VERCEL_URL}/api/_sjsu-fetch`;
+        console.log(`Using Edge fetcher: ${edgeFetcherUrl}`);
+        
+        const response = await fetch(edgeFetcherUrl, {
+          cache: 'no-store'
+        });
+        
+        if (!response.ok) {
+          throw new Error(`Edge fetcher failed: ${response.status}`);
+        }
+        
+        html = await response.text();
+      } else {
+        // In development, try direct fetch (might work or fail depending on local setup)
+        const response = await fetch(this.baseUrl, {
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+          },
+          method: 'GET',
+        });
+        
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        html = await response.text();
       }
 
-      const html = await response.text();
       const $ = cheerio.load(html);
       
       const garages: ScrapedGarageData[] = [];
