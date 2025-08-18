@@ -30,8 +30,12 @@ export interface GarageInfo {
 export async function initializeDatabase() {
   const client = await pool.connect();
   try {
-    // Create extension if not exists
-    await client.query('CREATE EXTENSION IF NOT EXISTS timescaledb CASCADE;');
+    const useTimescale = process.env.DISABLE_TIMESCALE !== 'true';
+    
+    if (useTimescale) {
+      // Create extension if not exists
+      await client.query('CREATE EXTENSION IF NOT EXISTS timescaledb CASCADE;');
+    }
     
     // Create garage_info table for static garage information
     await client.query(`
@@ -61,62 +65,84 @@ export async function initializeDatabase() {
       );
     `);
 
-    // Create hypertable (only if not already a hypertable)
-    try {
-      await client.query(`
-        SELECT create_hypertable('garage_readings', 'timestamp', if_not_exists => TRUE);
-      `);
-    } catch (error) {
-      // Hypertable might already exist, which is fine
-      console.log('Hypertable might already exist:', error);
+    if (useTimescale) {
+      // Create hypertable (only if not already a hypertable)
+      try {
+        await client.query(`
+          SELECT create_hypertable('garage_readings', 'timestamp', if_not_exists => TRUE);
+        `);
+        console.log('Hypertable created successfully');
+      } catch (error) {
+        // Hypertable might already exist, which is fine
+        console.log('Hypertable might already exist:', error);
+      }
+
+      try {
+        // Create continuous aggregates for different time buckets
+        await client.query(`
+          CREATE MATERIALIZED VIEW IF NOT EXISTS garage_readings_5min
+          WITH (timescaledb.continuous) AS
+          SELECT 
+            garage_id,
+            garage_name,
+            time_bucket('5 minutes', timestamp) AS bucket,
+            avg(occupied_percentage) AS avg_utilization,
+            max(occupied_percentage) AS max_utilization,
+            min(occupied_percentage) AS min_utilization,
+            last(occupied_percentage, timestamp) AS last_utilization
+          FROM garage_readings
+          GROUP BY garage_id, garage_name, bucket;
+        `);
+
+        await client.query(`
+          CREATE MATERIALIZED VIEW IF NOT EXISTS garage_readings_hourly
+          WITH (timescaledb.continuous) AS
+          SELECT 
+            garage_id,
+            garage_name,
+            time_bucket('1 hour', timestamp) AS bucket,
+            avg(occupied_percentage) AS avg_utilization,
+            max(occupied_percentage) AS max_utilization,
+            min(occupied_percentage) AS min_utilization,
+            last(occupied_percentage, timestamp) AS last_utilization
+          FROM garage_readings
+          GROUP BY garage_id, garage_name, bucket;
+        `);
+
+        // Add refresh policies for continuous aggregates
+        await client.query(`
+          SELECT add_continuous_aggregate_policy('garage_readings_5min',
+            start_offset => INTERVAL '1 hour',
+            end_offset => INTERVAL '5 minutes',
+            schedule_interval => INTERVAL '5 minutes',
+            if_not_exists => TRUE);
+        `);
+
+        await client.query(`
+          SELECT add_continuous_aggregate_policy('garage_readings_hourly',
+            start_offset => INTERVAL '6 hours',
+            end_offset => INTERVAL '1 hour',
+            schedule_interval => INTERVAL '1 hour',
+            if_not_exists => TRUE);
+        `);
+        
+        console.log('TimescaleDB features initialized successfully');
+      } catch (error) {
+        console.log('TimescaleDB features failed, falling back to regular PostgreSQL:', error);
+      }
+    } else {
+      console.log('TimescaleDB disabled, using regular PostgreSQL');
     }
 
-    // Create continuous aggregates for different time buckets
+    // Create regular indexes for performance (works on both TimescaleDB and regular PostgreSQL)
     await client.query(`
-      CREATE MATERIALIZED VIEW IF NOT EXISTS garage_readings_5min
-      WITH (timescaledb.continuous) AS
-      SELECT 
-        garage_id,
-        garage_name,
-        time_bucket('5 minutes', timestamp) AS bucket,
-        avg(occupied_percentage) AS avg_utilization,
-        max(occupied_percentage) AS max_utilization,
-        min(occupied_percentage) AS min_utilization,
-        last(occupied_percentage, timestamp) AS last_utilization
-      FROM garage_readings
-      GROUP BY garage_id, garage_name, bucket;
+      CREATE INDEX IF NOT EXISTS idx_garage_readings_garage_timestamp 
+      ON garage_readings (garage_id, timestamp DESC);
     `);
 
     await client.query(`
-      CREATE MATERIALIZED VIEW IF NOT EXISTS garage_readings_hourly
-      WITH (timescaledb.continuous) AS
-      SELECT 
-        garage_id,
-        garage_name,
-        time_bucket('1 hour', timestamp) AS bucket,
-        avg(occupied_percentage) AS avg_utilization,
-        max(occupied_percentage) AS max_utilization,
-        min(occupied_percentage) AS min_utilization,
-        last(occupied_percentage, timestamp) AS last_utilization
-      FROM garage_readings
-      GROUP BY garage_id, garage_name, bucket;
-    `);
-
-    // Add refresh policies for continuous aggregates
-    await client.query(`
-      SELECT add_continuous_aggregate_policy('garage_readings_5min',
-        start_offset => INTERVAL '1 hour',
-        end_offset => INTERVAL '5 minutes',
-        schedule_interval => INTERVAL '5 minutes',
-        if_not_exists => TRUE);
-    `);
-
-    await client.query(`
-      SELECT add_continuous_aggregate_policy('garage_readings_hourly',
-        start_offset => INTERVAL '6 hours',
-        end_offset => INTERVAL '1 hour',
-        schedule_interval => INTERVAL '1 hour',
-        if_not_exists => TRUE);
+      CREATE INDEX IF NOT EXISTS idx_garage_readings_timestamp 
+      ON garage_readings (timestamp DESC);
     `);
 
     console.log('Database initialized successfully');
@@ -217,17 +243,41 @@ export async function getAggregatedData(
 ): Promise<any[]> {
   const client = await pool.connect();
   try {
-    const tableName = interval === '5min' ? 'garage_readings_5min' : 'garage_readings_hourly';
-    const query = `
-      SELECT bucket as timestamp, avg_utilization, max_utilization, min_utilization, last_utilization
-      FROM ${tableName}
-      WHERE garage_id = $1 
-        AND bucket >= NOW() - INTERVAL '${hours} hours'
-      ORDER BY bucket;
-    `;
+    const useTimescale = process.env.DISABLE_TIMESCALE !== 'true';
     
-    const result = await client.query(query, [garageId]);
-    return result.rows;
+    if (useTimescale) {
+      // Use TimescaleDB continuous aggregates
+      const tableName = interval === '5min' ? 'garage_readings_5min' : 'garage_readings_hourly';
+      const query = `
+        SELECT bucket as timestamp, avg_utilization, max_utilization, min_utilization, last_utilization
+        FROM ${tableName}
+        WHERE garage_id = $1 
+          AND bucket >= NOW() - INTERVAL '${hours} hours'
+        ORDER BY bucket;
+      `;
+      
+      const result = await client.query(query, [garageId]);
+      return result.rows;
+    } else {
+      // Use regular PostgreSQL with date_trunc for aggregation
+      const truncInterval = interval === '5min' ? '5 minutes' : '1 hour';
+      const query = `
+        SELECT 
+          date_trunc('${truncInterval}', timestamp) as timestamp,
+          avg(occupied_percentage) as avg_utilization,
+          max(occupied_percentage) as max_utilization,
+          min(occupied_percentage) as min_utilization,
+          (array_agg(occupied_percentage ORDER BY timestamp DESC))[1] as last_utilization
+        FROM garage_readings
+        WHERE garage_id = $1 
+          AND timestamp >= NOW() - INTERVAL '${hours} hours'
+        GROUP BY date_trunc('${truncInterval}', timestamp)
+        ORDER BY timestamp;
+      `;
+      
+      const result = await client.query(query, [garageId]);
+      return result.rows;
+    }
   } finally {
     client.release();
   }
