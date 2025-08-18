@@ -40,16 +40,38 @@ export class ParkingScraper {
         const edgeFetcherUrl = `https://${process.env.VERCEL_URL}/api/sjsu-fetch`;
         console.log(`Using Edge fetcher: ${edgeFetcherUrl}`);
         
-        const response = await fetch(edgeFetcherUrl, {
-          cache: 'no-store',
-          headers: {
-            'x-internal-auth': process.env.INTERNAL_FETCH_SECRET ?? '',
-            'x-vercel-protection-bypass': process.env.VERCEL_AUTOMATION_BYPASS_SECRET ?? ''
-          }
-        });
+        // Try Edge fetcher first, fallback to Node fetcher if it fails
+        let response;
         
-        if (!response.ok) {
-          throw new Error(`Edge fetcher failed: ${response.status}`);
+        try {
+          response = await fetch(edgeFetcherUrl, {
+            cache: 'no-store',
+            headers: {
+              'x-internal-auth': process.env.INTERNAL_FETCH_SECRET ?? '',
+              'x-vercel-protection-bypass': process.env.VERCEL_AUTOMATION_BYPASS_SECRET ?? ''
+            }
+          });
+          
+          if (!response.ok) {
+            throw new Error(`Edge fetcher failed: ${response.status}`);
+          }
+        } catch (edgeError) {
+          console.log('Edge fetcher failed, trying Node fetcher:', edgeError instanceof Error ? edgeError.message : edgeError);
+          
+          // Fallback to Node runtime fetcher that can bypass SSL verification
+          const nodeFetcherUrl = `https://${process.env.VERCEL_URL}/api/sjsu-fetch-node`;
+          
+          response = await fetch(nodeFetcherUrl, {
+            cache: 'no-store',
+            headers: {
+              'x-internal-auth': process.env.INTERNAL_FETCH_SECRET ?? '',
+              'x-vercel-protection-bypass': process.env.VERCEL_AUTOMATION_BYPASS_SECRET ?? ''
+            }
+          });
+          
+          if (!response.ok) {
+            throw new Error(`Both Edge and Node fetchers failed. Node: ${response.status}`);
+          }
         }
         
         html = await response.text();
