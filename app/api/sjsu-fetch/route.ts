@@ -17,11 +17,15 @@ export async function GET(req: Request) {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
         'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
         'Accept-Language': 'en-US,en;q=0.5',
+        'Accept-Encoding': 'gzip, deflate, br',
+        'Connection': 'keep-alive',
+        'Upgrade-Insecure-Requests': '1',
       }
     });
     
     if (!response.ok) {
-      return new Response('SJSU upstream failed', { status: 502 });
+      console.error('SJSU upstream error:', response.status, response.statusText);
+      return new Response(`SJSU upstream failed: ${response.status} ${response.statusText}`, { status: 502 });
     }
     
     const text = await response.text();
@@ -35,7 +39,12 @@ export async function GET(req: Request) {
     
   } catch (error) {
     console.error('Edge fetcher error:', error);
-    return new Response('Failed to fetch SJSU data', { status: 500 });
+    console.error('Error details:', {
+      name: error?.name,
+      message: error?.message,
+      cause: error?.cause
+    });
+    return new Response(`Failed to fetch SJSU data: ${error?.message || 'Unknown error'}`, { status: 500 });
   }
 }
 
