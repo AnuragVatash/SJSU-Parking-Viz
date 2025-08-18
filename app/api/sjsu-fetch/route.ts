@@ -24,34 +24,13 @@ export async function GET(req: Request) {
         }
       });
     } catch (sslError) {
-      console.log('Direct fetch failed:', sslError instanceof Error ? sslError.message : sslError);
+      console.error('Direct fetch failed:', sslError instanceof Error ? sslError.message : sslError);
       
-      // For development/testing, return mock data when SJSU is unreachable
-      if (process.env.NODE_ENV === 'development' || req.headers.get('x-mock-data')) {
-        console.log('Returning mock data for testing');
-        const mockData = `<!DOCTYPE html><html><head><script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
-new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
-j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
-'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
-})(window,document,'script','dataLayer','GTM-PMNG6XV');</script><meta charset="UTF-8"><meta name="description" content="Check availability for SJSU parking garages"><meta name="keyword" content="SJSU parking, SJSU parking garage"><meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1"><meta name="viewport" content="width=device-width, initial-scale=1.0"><link rel="stylesheet" type="text/css" href="/css/parking.css"><link href="https://fonts.googleapis.com/css?family=Nunito+Sans:400,600,800" rel="stylesheet"><header class="sjsu-header u-bg--dark" role="banner"><div class="wrap"><a class="sjsu-title" target="_blank" href="https://www.sjsu.edu/">SJSU</a></div></header><span class="sjsu-gradientbar"></span><main class="sjsu-main"></main><div class="wrap"><h1 class="parking-title">Parking Garage Fullness</h1><h2 class="parking-services"><a target="_blank" href="https://www.sjsu.edu/parking/index.php">Parking Services</a></h2><p class="timestamp">Last updated 2025-8-18 12:05:00 AM<a class="btn btn-primary" style="width: 100%;" href="/GarageStatusPlain"> Refresh</a></p><div class="garage"><p></p><h2 class="garage__name">South Garage </h2><p class="garage__text"><a class="garage__address" target="_blank" href="https://www.google.com/maps/place/377 S. 7th St., San Jose, CA 95112">377 S. 7th St., San Jose, CA 95112</a><span class="garage__fullness"> 25 %   </span></p><p></p><h2 class="garage__name">West Garage </h2><p class="garage__text"><a class="garage__address" target="_blank" href="https://www.google.com/maps/place/350 S. 4th St., San Jose, CA 95112">350 S. 4th St., San Jose, CA 95112</a><span class="garage__fullness"> 15 %   </span></p><p></p><h2 class="garage__name">North Garage </h2><p class="garage__text"><a class="garage__address" target="_blank" href="https://www.google.com/maps/place/65 S. 10th St., San Jose, CA 95112">65 S. 10th St., San Jose, CA 95112</a><span class="garage__fullness"> 5 %   </span></p><p></p><h2 class="garage__name">South Campus Garage </h2><p class="garage__text"><a class="garage__address" target="_blank" href="https://www.google.com/maps/place/1278 S. 10th Street, San Jose, CA 95112">1278 S. 10th Street, San Jose, CA 95112</a><span class="garage__fullness"> 8 %   </span></p><p></p></div></html>`;
-        
-        return new Response(mockData, { 
-          headers: { 
-            'content-type': 'text/plain; charset=utf-8',
-            'cache-control': 'no-cache, no-store, must-revalidate',
-            'x-mock-data': 'true'
-          } 
-        });
-      }
+      // The SSL certificate issue is likely due to intermediate chain problems
+      // Edge runtime might be more strict than regular Node.js
+      const errorDetails = sslError instanceof Error ? sslError.message : String(sslError);
       
-      // In production, return a detailed error about the SSL issue
-      const errorMessage = `SJSU parking website SSL certificate issue. This is a known problem with sjsuparkingstatus.sjsu.edu. The certificate appears to have intermediate chain issues that prevent secure connections. Original error: ${sslError instanceof Error ? sslError.message : sslError}`;
-      console.error('SSL Error Details:', errorMessage);
-      
-      return new Response(errorMessage, { 
-        status: 502,
-        headers: { 'content-type': 'text/plain; charset=utf-8' }
-      });
+      throw new Error(`SSL Certificate Error: ${errorDetails}. This appears to be an issue with SJSU's SSL certificate configuration.`);
     }
     
     if (!response.ok) {

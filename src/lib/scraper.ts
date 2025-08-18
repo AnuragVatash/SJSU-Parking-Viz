@@ -44,9 +44,7 @@ export class ParkingScraper {
           cache: 'no-store',
           headers: {
             'x-internal-auth': process.env.INTERNAL_FETCH_SECRET ?? '',
-            'x-vercel-protection-bypass': process.env.VERCEL_AUTOMATION_BYPASS_SECRET ?? '',
-            // Add mock data header for testing when SJSU site has SSL issues
-            ...(process.env.USE_MOCK_DATA === 'true' && { 'x-mock-data': 'true' })
+            'x-vercel-protection-bypass': process.env.VERCEL_AUTOMATION_BYPASS_SECRET ?? ''
           }
         });
         
