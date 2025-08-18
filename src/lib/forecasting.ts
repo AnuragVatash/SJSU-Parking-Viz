@@ -153,7 +153,7 @@ export class ParkingForecaster {
     if (matchingReadings.length === 0) return null;
 
     return matchingReadings.reduce(
-      (sum, reading) => sum + reading.occupied_percentage, 0
+      (sum, reading) => sum + (reading.occupied_percentage ?? 0), 0
     ) / matchingReadings.length;
   }
 
@@ -169,7 +169,7 @@ export class ParkingForecaster {
     if (matchingReadings.length === 0) return null;
 
     return matchingReadings.reduce(
-      (sum, reading) => sum + reading.occupied_percentage, 0
+      (sum, reading) => sum + (reading.occupied_percentage ?? 0), 0
     ) / matchingReadings.length;
   }
 
@@ -194,22 +194,27 @@ export class ParkingForecaster {
     // Calculate trend using simple linear regression
     const n = data.length;
     const xSum = data.reduce((sum, _, i) => sum + i, 0);
-    const ySum = data.reduce((sum, reading) => sum + reading.occupied_percentage, 0);
-    const xySum = data.reduce((sum, reading, i) => sum + (i * reading.occupied_percentage), 0);
+    const ySum = data.reduce((sum, reading) => sum + (reading.occupied_percentage ?? 0), 0);
+    const xySum = data.reduce((sum, reading, i) => sum + (i * (reading.occupied_percentage ?? 0)), 0);
     const x2Sum = data.reduce((sum, _, i) => sum + (i * i), 0);
 
-    const slope = (n * xySum - xSum * ySum) / (n * x2Sum - xSum * xSum);
-    const changePercentage = (slope * data.length) / (ySum / n) * 100;
+    const denominator = n * x2Sum - xSum * xSum;
+    const slope = denominator !== 0 ? (n * xySum - xSum * ySum) / denominator : 0;
+    const avgUtilization = ySum / n;
+    const changePercentage = avgUtilization > 0 && isFinite(slope)
+      ? (slope * data.length) / avgUtilization * 100
+      : 0;
 
     // Determine peak and off-peak hours
     const hourlyAverages = new Map<number, number[]>();
     
     data.forEach(reading => {
       const hour = getHours(reading.timestamp);
+      const utilization = reading.occupied_percentage ?? 0;
       if (!hourlyAverages.has(hour)) {
         hourlyAverages.set(hour, []);
       }
-      hourlyAverages.get(hour)!.push(reading.occupied_percentage);
+      hourlyAverages.get(hour)!.push(utilization);
     });
 
     const avgByHour = Array.from(hourlyAverages.entries()).map(([hour, values]) => ({

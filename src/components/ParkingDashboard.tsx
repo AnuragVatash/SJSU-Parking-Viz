@@ -34,7 +34,7 @@ interface ForecastData {
 
 interface TrendData {
   trend: 'increasing' | 'decreasing' | 'stable';
-  change_percentage: number;
+  change_percentage: number | null | undefined;
   peak_hours: number[];
   off_peak_hours: number[];
 }
@@ -315,7 +315,7 @@ export function ParkingDashboard() {
                         }>
                           {trends[selectedGarage].trend}
                           {trends[selectedGarage].change_percentage !== 0 && 
-                            ` (${trends[selectedGarage].change_percentage.toFixed(1)}%)`
+                            ` (${(trends[selectedGarage].change_percentage ?? 0).toFixed(1)}%)`
                           }
                         </Badge>
                       </div>
