@@ -30,7 +30,8 @@ export class ParkingScraper {
     try {
       console.log(`Fetching parking data from: ${this.baseUrl}`);
       
-      const response = await fetch(this.baseUrl, {
+      // Configure fetch options with SSL handling for production
+      const fetchOptions: RequestInit = {
         headers: {
           'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
           'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
@@ -39,7 +40,17 @@ export class ParkingScraper {
           'Connection': 'keep-alive',
         },
         method: 'GET',
-      });
+      };
+
+      // In Node.js environments (like Vercel), add SSL configuration
+      if (typeof window === 'undefined') {
+        const https = await import('https');
+        (fetchOptions as any).agent = new https.Agent({
+          rejectUnauthorized: false // Allow self-signed certificates
+        });
+      }
+      
+      const response = await fetch(this.baseUrl, fetchOptions);
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
