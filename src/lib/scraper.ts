@@ -43,7 +43,8 @@ export class ParkingScraper {
         const response = await fetch(edgeFetcherUrl, {
           cache: 'no-store',
           headers: {
-            authorization: `Bearer ${process.env.INTERNAL_FETCH_SECRET}`
+            'x-internal-auth': process.env.INTERNAL_FETCH_SECRET ?? '',
+            'x-vercel-protection-bypass': process.env.VERCEL_AUTOMATION_BYPASS_SECRET ?? ''
           }
         });
         

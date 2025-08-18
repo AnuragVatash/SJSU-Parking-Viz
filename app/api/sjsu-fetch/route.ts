@@ -1,10 +1,10 @@
 // Edge runtime is more tolerant of SSL certificate issues
 export const runtime = 'edge';
+export const dynamic = 'force-dynamic';
 
 export async function GET(req: Request) {
-  // Simple internal auth - require the shared secret
-  const auth = req.headers.get('authorization');
-  if (auth !== `Bearer ${process.env.INTERNAL_FETCH_SECRET}`) {
+  // Simple internal auth - use custom header to avoid proxy issues
+  if (req.headers.get('x-internal-auth') !== process.env.INTERNAL_FETCH_SECRET) {
     return new Response('Unauthorized', { status: 401 });
   }
 
@@ -38,3 +38,6 @@ export async function GET(req: Request) {
     return new Response('Failed to fetch SJSU data', { status: 500 });
   }
 }
+
+// Allow POST for cron/webhooks
+export const POST = GET;
