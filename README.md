@@ -4,7 +4,7 @@ A comprehensive real-time parking visualization system for San José State Unive
 
 ## 🚀 Features
 
-- **Real-time Data Collection**: Scrapes SJSU parking data every minute
+- **Real-time Data Collection**: Scrapes SJSU parking data every 3 minutes
 - **Time-Series Storage**: Uses TimescaleDB (PostgreSQL extension) for efficient time-series data management
 - **Smart Forecasting**: Seasonal naive forecasting with fallback strategies
 - **Interactive Dashboard**: Modern UI built with Next.js, React, and shadcn/ui
