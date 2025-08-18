@@ -10,6 +10,7 @@ A comprehensive real-time parking visualization system for San José State Unive
 - **Interactive Dashboard**: Modern UI built with Next.js, React, and shadcn/ui
 - **Trend Analysis**: Historical pattern analysis with peak/off-peak hour identification
 - **Responsive Design**: Works seamlessly on desktop and mobile devices
+- **Dark/Light Mode**: Theme toggle with system preference detection
 - **Auto-refresh**: Live updates every 5 minutes with manual refresh option
 - **Analytics**: Vercel Analytics for visitor tracking and usage insights
 

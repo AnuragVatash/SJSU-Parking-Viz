@@ -9,6 +9,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { GarageCard } from "./GarageCard";
 import { ParkingChart } from "./ParkingChart";
 import { RefreshCw, Activity, TrendingUp, MapPin, Clock } from "lucide-react";
+import { ThemeToggle } from "./ThemeToggle";
 
 interface GarageData {
   garage_id: string;
@@ -172,17 +173,20 @@ export function ParkingDashboard() {
                 <Clock className="h-4 w-4" />
                 Last updated: {lastUpdated.toLocaleTimeString()}
               </div>
-              <Button onClick={refreshData} disabled={loading} size="sm">
-                <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
-                Refresh
-              </Button>
-              <Button
-                onClick={() => window.open('/admin', '_blank')}
-                variant="outline"
-                size="sm"
-              >
-                Admin
-              </Button>
+              <div className="flex items-center gap-2">
+                <ThemeToggle />
+                <Button onClick={refreshData} disabled={loading} size="sm">
+                  <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+                  Refresh
+                </Button>
+                <Button
+                  onClick={() => window.open('/status', '_blank')}
+                  variant="outline"
+                  size="sm"
+                >
+                  System Status
+                </Button>
+              </div>
             </div>
           </div>
 
