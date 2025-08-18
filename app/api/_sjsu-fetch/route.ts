@@ -1,7 +1,13 @@
 // Edge runtime is more tolerant of SSL certificate issues
 export const runtime = 'edge';
 
-export async function GET() {
+export async function GET(req: Request) {
+  // Simple internal auth - require the shared secret
+  const auth = req.headers.get('authorization');
+  if (auth !== `Bearer ${process.env.INTERNAL_FETCH_SECRET}`) {
+    return new Response('Unauthorized', { status: 401 });
+  }
+
   try {
     const upstream = 'https://sjsuparkingstatus.sjsu.edu/GarageStatusPlain';
     
@@ -22,7 +28,7 @@ export async function GET() {
     
     return new Response(text, { 
       headers: { 
-        'content-type': 'text/html; charset=utf-8',
+        'content-type': 'text/plain; charset=utf-8',
         'cache-control': 'no-cache, no-store, must-revalidate'
       } 
     });

@@ -41,7 +41,10 @@ export class ParkingScraper {
         console.log(`Using Edge fetcher: ${edgeFetcherUrl}`);
         
         const response = await fetch(edgeFetcherUrl, {
-          cache: 'no-store'
+          cache: 'no-store',
+          headers: {
+            authorization: `Bearer ${process.env.INTERNAL_FETCH_SECRET}`
+          }
         });
         
         if (!response.ok) {
