@@ -15,9 +15,31 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const qstash = new Client({
-      token: process.env.QSTASH_TOKEN!,
-    });
+    const qstash = new Client({ token: process.env.QSTASH_TOKEN! });
+
+    // Build a proper absolute destination URL
+    // Vercel provides VERCEL_URL as host-only (no scheme)
+    const fromEnv = process.env.NEXT_PUBLIC_SITE_URL || process.env.SITE_URL;
+    const vercelHost = process.env.VERCEL_URL;
+    const siteUrl = fromEnv
+      ? fromEnv
+      : vercelHost
+        ? `https://${vercelHost}`
+        : undefined;
+
+    if (!siteUrl) {
+      return NextResponse.json(
+        { error: 'SITE_URL/VERCEL_URL not set. Provide NEXT_PUBLIC_SITE_URL or SITE_URL in env.' },
+        { status: 400 }
+      );
+    }
+
+    if (siteUrl.includes('localhost') || siteUrl.includes('127.0.0.1')) {
+      return NextResponse.json(
+        { error: 'Destination cannot be localhost. Use your deployed Vercel URL.' },
+        { status: 400 }
+      );
+    }
 
     // Check if schedule already exists
     const existingSchedules = await qstash.schedules.list();
@@ -35,16 +57,10 @@ export async function POST(request: NextRequest) {
 
     // Create the 24/7 schedule
     const schedule = await qstash.schedules.create({
-      destination: `${process.env.VERCEL_URL || 'https://your-app.vercel.app'}/api/scrape`,
+      destination: `${siteUrl}/api/scrape`,
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ 
-        source: 'qstash-scheduler',
-        timestamp: new Date().toISOString()
-      }),
-      cron: '*/3 * * * *', // Every 3 minutes, 24/7
+      // With verifySignatureAppRouter, we don't need custom auth headers
+      cron: '*/3 * * * *',
     });
 
     return NextResponse.json({
