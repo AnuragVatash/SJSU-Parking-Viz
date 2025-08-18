@@ -26,7 +26,7 @@ export async function GET(req: Request) {
         }
       });
     } catch (sslError) {
-      console.log('Direct fetch failed, trying CORS proxy:', sslError.message);
+      console.log('Direct fetch failed, trying CORS proxy:', sslError instanceof Error ? sslError.message : sslError);
       // Use CORS proxy as fallback for SSL certificate issues
       const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(directUrl)}`;
       response = await fetch(proxyUrl, { 
@@ -54,11 +54,11 @@ export async function GET(req: Request) {
   } catch (error) {
     console.error('Edge fetcher error:', error);
     console.error('Error details:', {
-      name: error?.name,
-      message: error?.message,
-      cause: error?.cause
+      name: error instanceof Error ? error.name : 'Unknown',
+      message: error instanceof Error ? error.message : String(error),
+      cause: error instanceof Error ? error.cause : undefined
     });
-    return new Response(`Failed to fetch SJSU data: ${error?.message || 'Unknown error'}`, { status: 500 });
+    return new Response(`Failed to fetch SJSU data: ${error instanceof Error ? error.message : 'Unknown error'}`, { status: 500 });
   }
 }
 
