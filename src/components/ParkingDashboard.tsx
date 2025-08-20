@@ -1,7 +1,13 @@
 "use client";
 
-import { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { useState, useEffect } from "react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -33,7 +39,7 @@ interface ForecastData {
 }
 
 interface TrendData {
-  trend: 'increasing' | 'decreasing' | 'stable';
+  trend: "increasing" | "decreasing" | "stable";
   change_percentage: number | null | undefined;
   peak_hours: number[];
   off_peak_hours: number[];
@@ -49,88 +55,121 @@ interface HistoricalDataPoint {
 
 export function ParkingDashboard() {
   const [garages, setGarages] = useState<GarageData[]>([]);
-  const [forecasts, setForecasts] = useState<Record<string, ForecastData[]>>({});
+  const [forecasts, setForecasts] = useState<Record<string, ForecastData[]>>(
+    {}
+  );
   const [trends, setTrends] = useState<Record<string, TrendData>>({});
-  const [historicalData, setHistoricalData] = useState<Record<string, HistoricalDataPoint[]>>({});
+  const [historicalData, setHistoricalData] = useState<
+    Record<string, HistoricalDataPoint[]>
+  >({});
   const [loading, setLoading] = useState(true);
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
-  const [selectedGarage, setSelectedGarage] = useState<string>('');
+  const [selectedGarage, setSelectedGarage] = useState<string>("");
+  const [chartTimeRange, setChartTimeRange] = useState<
+    "12h" | "24h" | "7d" | "dynamic"
+  >("dynamic");
 
   const fetchGarageData = async () => {
     try {
-      const response = await fetch('/api/garages');
+      const response = await fetch("/api/garages");
       const data = await response.json();
-      
+
       if (data.success) {
         setGarages(data.garages);
         setLastUpdated(new Date());
-        
+
         // Set first garage as selected if none selected
         if (!selectedGarage && data.garages.length > 0) {
           setSelectedGarage(data.garages[0].garage_id);
         }
       }
     } catch (error) {
-      console.error('Error fetching garage data:', error);
+      console.error("Error fetching garage data:", error);
     }
   };
 
   const fetchForecast = async (garageId: string) => {
     try {
-      const response = await fetch(`/api/forecast?garage_id=${garageId}&minutes=180`);
+      const response = await fetch(
+        `/api/forecast?garage_id=${garageId}&minutes=180`
+      );
       const data = await response.json();
-      
+
       if (data.success) {
-        setForecasts(prev => ({
+        setForecasts((prev) => ({
           ...prev,
-          [garageId]: data.predictions
+          [garageId]: data.predictions,
         }));
       }
     } catch (error) {
-      console.error('Error fetching forecast:', error);
+      console.error("Error fetching forecast:", error);
     }
   };
 
-  const fetchTrends = async (garageId: string) => {
+  const fetchTrends = async (
+    garageId: string,
+    timeRange?: "12h" | "24h" | "7d" | "dynamic"
+  ) => {
+    const range = timeRange || chartTimeRange;
+    let days = 7;
+
+    switch (range) {
+      case "12h":
+        days = 0.5; // 12 hours
+        break;
+      case "24h":
+        days = 1;
+        break;
+      case "7d":
+        days = 7;
+        break;
+      case "dynamic":
+      default:
+        days = 7; // Default to 7 days for dynamic
+        break;
+    }
+
     try {
-      const response = await fetch(`/api/trends?garage_id=${garageId}&days=7`);
+      const response = await fetch(
+        `/api/trends?garage_id=${garageId}&days=${days}`
+      );
       const data = await response.json();
-      
+
       if (data.success) {
-        setTrends(prev => ({
+        setTrends((prev) => ({
           ...prev,
-          [garageId]: data.trend_analysis
+          [garageId]: data.trend_analysis,
         }));
-        
-        setHistoricalData(prev => ({
+
+        setHistoricalData((prev) => ({
           ...prev,
-          [garageId]: data.historical_data
+          [garageId]: data.historical_data,
         }));
       }
     } catch (error) {
-      console.error('Error fetching trends:', error);
+      console.error("Error fetching trends:", error);
     }
   };
 
   const refreshData = async () => {
     setLoading(true);
     await fetchGarageData();
-    
+
     // Fetch additional data for each garage
-    garages.forEach(garage => {
+    garages.forEach((garage) => {
       fetchForecast(garage.garage_id);
-      fetchTrends(garage.garage_id);
+      fetchTrends(garage.garage_id, chartTimeRange);
     });
-    
+
     setLoading(false);
   };
 
   useEffect(() => {
     refreshData();
-    
+
     // Auto-refresh every 5 minutes
     const interval = setInterval(refreshData, 5 * 60 * 1000);
-    
+
     return () => clearInterval(interval);
   }, []);
 
@@ -138,17 +177,30 @@ export function ParkingDashboard() {
   useEffect(() => {
     if (selectedGarage) {
       fetchForecast(selectedGarage);
-      fetchTrends(selectedGarage);
+      fetchTrends(selectedGarage, chartTimeRange);
     }
   }, [selectedGarage]);
 
+  // Fetch data when time range changes
+  useEffect(() => {
+    if (selectedGarage) {
+      fetchTrends(selectedGarage, chartTimeRange);
+    }
+  }, [chartTimeRange]);
+
   const getOverallStats = () => {
-    if (garages.length === 0) return { totalSpaces: 0, occupiedSpaces: 0, avgUtilization: 0 };
-    
+    if (garages.length === 0)
+      return { totalSpaces: 0, occupiedSpaces: 0, avgUtilization: 0 };
+
     const totalSpaces = garages.reduce((sum, g) => sum + (g.capacity || 0), 0);
-    const occupiedSpaces = garages.reduce((sum, g) => sum + (g.occupied_spaces || 0), 0);
-    const avgUtilization = garages.reduce((sum, g) => sum + g.occupied_percentage, 0) / garages.length;
-    
+    const occupiedSpaces = garages.reduce(
+      (sum, g) => sum + (g.occupied_spaces || 0),
+      0
+    );
+    const avgUtilization =
+      garages.reduce((sum, g) => sum + g.occupied_percentage, 0) /
+      garages.length;
+
     return { totalSpaces, occupiedSpaces, avgUtilization };
   };
 
@@ -176,11 +228,13 @@ export function ParkingDashboard() {
               <div className="flex items-center gap-2">
                 <ThemeToggle />
                 <Button onClick={refreshData} disabled={loading} size="sm">
-                  <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+                  <RefreshCw
+                    className={`h-4 w-4 mr-2 ${loading ? "animate-spin" : ""}`}
+                  />
                   Refresh
                 </Button>
                 <Button
-                  onClick={() => window.open('/status', '_blank')}
+                  onClick={() => window.open("/status", "_blank")}
                   variant="outline"
                   size="sm"
                 >
@@ -194,7 +248,9 @@ export function ParkingDashboard() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total Garages</CardTitle>
+                <CardTitle className="text-sm font-medium">
+                  Total Garages
+                </CardTitle>
                 <MapPin className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
@@ -204,14 +260,18 @@ export function ParkingDashboard() {
                 </p>
               </CardContent>
             </Card>
-            
+
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Average Utilization</CardTitle>
+                <CardTitle className="text-sm font-medium">
+                  Average Utilization
+                </CardTitle>
                 <TrendingUp className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{(avgUtilization ?? 0).toFixed(1)}%</div>
+                <div className="text-2xl font-bold">
+                  {(avgUtilization ?? 0).toFixed(1)}%
+                </div>
                 <p className="text-xs text-muted-foreground">
                   Across all garages
                 </p>
@@ -221,11 +281,15 @@ export function ParkingDashboard() {
             {totalSpaces > 0 && (
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Total Capacity</CardTitle>
+                  <CardTitle className="text-sm font-medium">
+                    Total Capacity
+                  </CardTitle>
                   <Activity className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">{occupiedSpaces} / {totalSpaces}</div>
+                  <div className="text-2xl font-bold">
+                    {occupiedSpaces} / {totalSpaces}
+                  </div>
                   <p className="text-xs text-muted-foreground">
                     Occupied / Total spaces
                   </p>
@@ -243,12 +307,17 @@ export function ParkingDashboard() {
 
             <TabsContent value="overview" className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                {garages.map(garage => {
+                {garages.map((garage) => {
                   const trend = trends[garage.garage_id];
                   const forecast = forecasts[garage.garage_id];
-                  const nextHourPrediction = forecast && forecast.length > 0 
-                    ? forecast.find(f => new Date(f.timestamp).getTime() > Date.now() + 60 * 60 * 1000)?.predicted_utilization
-                    : undefined;
+                  const nextHourPrediction =
+                    forecast && forecast.length > 0
+                      ? forecast.find(
+                          (f) =>
+                            new Date(f.timestamp).getTime() >
+                            Date.now() + 60 * 60 * 1000
+                        )?.predicted_utilization
+                      : undefined;
 
                   return (
                     <GarageCard
@@ -265,28 +334,97 @@ export function ParkingDashboard() {
             <TabsContent value="detailed" className="space-y-6">
               {garages.length > 0 && (
                 <>
-                  <div className="flex flex-wrap gap-2 mb-4">
-                    {garages.map(garage => (
+                  <div className="flex flex-col gap-4 mb-6">
+                    {/* Garage Selection */}
+                    <div className="flex flex-wrap gap-2">
+                      {garages.map((garage) => (
+                        <Button
+                          key={garage.garage_id}
+                          variant={
+                            selectedGarage === garage.garage_id
+                              ? "default"
+                              : "outline"
+                          }
+                          size="sm"
+                          onClick={() => setSelectedGarage(garage.garage_id)}
+                        >
+                          {garage.garage_name}
+                        </Button>
+                      ))}
+                    </div>
+
+                    {/* Time Range Selection */}
+                    <div className="flex flex-wrap gap-2 items-center">
+                      <span className="text-sm font-medium text-muted-foreground mr-2">
+                        Time Range:
+                      </span>
                       <Button
-                        key={garage.garage_id}
-                        variant={selectedGarage === garage.garage_id ? "default" : "outline"}
+                        variant={
+                          chartTimeRange === "dynamic" ? "default" : "outline"
+                        }
                         size="sm"
-                        onClick={() => setSelectedGarage(garage.garage_id)}
+                        onClick={() => setChartTimeRange("dynamic")}
                       >
-                        {garage.garage_name}
+                        Dynamic
                       </Button>
-                    ))}
+                      <Button
+                        variant={
+                          chartTimeRange === "12h" ? "default" : "outline"
+                        }
+                        size="sm"
+                        onClick={() => setChartTimeRange("12h")}
+                      >
+                        12 Hours
+                      </Button>
+                      <Button
+                        variant={
+                          chartTimeRange === "24h" ? "default" : "outline"
+                        }
+                        size="sm"
+                        onClick={() => setChartTimeRange("24h")}
+                      >
+                        24 Hours
+                      </Button>
+                      <Button
+                        variant={
+                          chartTimeRange === "7d" ? "default" : "outline"
+                        }
+                        size="sm"
+                        onClick={() => setChartTimeRange("7d")}
+                      >
+                        7 Days
+                      </Button>
+                    </div>
                   </div>
 
                   {selectedGarage && historicalData[selectedGarage] && (
                     <ParkingChart
-                      title={`${garages.find(g => g.garage_id === selectedGarage)?.garage_name} - 7 Day History`}
+                      title={`${
+                        garages.find((g) => g.garage_id === selectedGarage)
+                          ?.garage_name
+                      } - ${
+                        chartTimeRange === "12h"
+                          ? "12 Hour History"
+                          : chartTimeRange === "24h"
+                          ? "24 Hour History"
+                          : chartTimeRange === "7d"
+                          ? "7 Day History"
+                          : "Dynamic History"
+                      }`}
                       data={historicalData[selectedGarage]}
-                      predictions={forecasts[selectedGarage]?.map(f => ({
+                      predictions={forecasts[selectedGarage]?.map((f) => ({
                         timestamp: f.timestamp,
-                        predicted_utilization: f.predicted_utilization
+                        predicted_utilization: f.predicted_utilization,
                       }))}
-                      timeFormat="MMM dd HH:mm"
+                      timeFormat={
+                        chartTimeRange === "12h"
+                          ? "HH:mm"
+                          : chartTimeRange === "24h"
+                          ? "MMM dd HH:mm"
+                          : chartTimeRange === "7d"
+                          ? "MMM dd HH:mm"
+                          : "MMM dd HH:mm"
+                      }
                       height={400}
                     />
                   )}
@@ -299,7 +437,11 @@ export function ParkingDashboard() {
                 <Card>
                   <CardHeader>
                     <CardTitle>
-                      {garages.find(g => g.garage_id === selectedGarage)?.garage_name} Analytics
+                      {
+                        garages.find((g) => g.garage_id === selectedGarage)
+                          ?.garage_name
+                      }{" "}
+                      Analytics
                     </CardTitle>
                     <CardDescription>
                       7-day trend analysis and usage patterns
@@ -309,35 +451,49 @@ export function ParkingDashboard() {
                     <div className="flex items-center gap-4 flex-wrap">
                       <div className="flex items-center gap-2">
                         <span className="text-sm font-medium">Trend:</span>
-                        <Badge variant={
-                          trends[selectedGarage].trend === 'increasing' ? 'destructive' :
-                          trends[selectedGarage].trend === 'decreasing' ? 'default' : 'secondary'
-                        }>
-                          {trends[selectedGarage].trend}
-                          {trends[selectedGarage].change_percentage !== 0 && 
-                            ` (${(trends[selectedGarage].change_percentage ?? 0).toFixed(1)}%)`
+                        <Badge
+                          variant={
+                            trends[selectedGarage].trend === "increasing"
+                              ? "destructive"
+                              : trends[selectedGarage].trend === "decreasing"
+                              ? "default"
+                              : "secondary"
                           }
+                        >
+                          {trends[selectedGarage].trend}
+                          {trends[selectedGarage].change_percentage !== 0 &&
+                            ` (${(
+                              trends[selectedGarage].change_percentage ?? 0
+                            ).toFixed(1)}%)`}
                         </Badge>
                       </div>
                     </div>
-                    
+
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
                         <h4 className="font-medium mb-2">Peak Hours</h4>
                         <div className="flex flex-wrap gap-1">
-                          {trends[selectedGarage].peak_hours.map(hour => (
-                            <Badge key={hour} variant="outline" className="text-xs">
+                          {trends[selectedGarage].peak_hours.map((hour) => (
+                            <Badge
+                              key={hour}
+                              variant="outline"
+                              className="text-xs"
+                            >
                               {hour}:00
                             </Badge>
                           ))}
                         </div>
                       </div>
-                      
+
                       <div>
                         <h4 className="font-medium mb-2">Off-Peak Hours</h4>
                         <div className="flex flex-wrap gap-1">
-                          {trends[selectedGarage].off_peak_hours.map(hour => (
-                            <Badge key={hour} variant="outline" className="text-xs">
+                          {trends[selectedGarage].off_peak_hours.map((hour) => (
+                            <Badge
+                              key={hour}
+                              variant="outline"
+                              className="text-xs"
+                            >
                               {hour}:00
                             </Badge>
                           ))}

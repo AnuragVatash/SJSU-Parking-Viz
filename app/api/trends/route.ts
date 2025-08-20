@@ -7,7 +7,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const garageId = searchParams.get('garage_id');
     const daysParam = searchParams.get('days');
-    const days = daysParam ? parseInt(daysParam) : 7;
+    const days = daysParam ? parseFloat(daysParam) : 7;
 
     if (!garageId) {
       return NextResponse.json(
@@ -16,9 +16,9 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    if (days < 1 || days > 30) {
+    if (days < 0.1 || days > 30) {
       return NextResponse.json(
-        { error: 'days parameter must be between 1 and 30' },
+        { error: 'days parameter must be between 0.1 and 30' },
         { status: 400 }
       );
     }
@@ -28,7 +28,9 @@ export async function GET(request: NextRequest) {
     
     // Get aggregated data for visualization
     const hours = days * 24;
-    const aggregatedData = await getAggregatedData(garageId, 'hourly', hours);
+    // Use 5-minute intervals for periods less than 2 days, hourly for longer periods
+    const interval = days < 2 ? '5min' : 'hourly';
+    const aggregatedData = await getAggregatedData(garageId, interval, hours);
     
     return NextResponse.json({
       success: true,
