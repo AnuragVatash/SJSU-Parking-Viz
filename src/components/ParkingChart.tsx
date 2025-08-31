@@ -142,7 +142,7 @@ export function ParkingChart({
       <CardContent>
         <ResponsiveContainer width="100%" height={height}>
           {showMinMax ? (
-            <AreaChart data={combinedData} isAnimationActive={false}>
+            <AreaChart data={combinedData}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis
                 dataKey="timestamp"
@@ -188,7 +188,7 @@ export function ParkingChart({
               />
             </AreaChart>
           ) : (
-            <LineChart data={combinedData} isAnimationActive={false}>
+            <LineChart data={combinedData}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis
                 dataKey="timestamp"

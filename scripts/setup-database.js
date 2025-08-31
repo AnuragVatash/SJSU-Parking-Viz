@@ -1,5 +1,5 @@
 /**
- * Database setup script for Neon PostgreSQL with TimescaleDB
+ * Database setup script for Neon PostgreSQL
  * Run with: node scripts/setup-database.js
  */
 

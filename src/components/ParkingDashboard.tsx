@@ -71,6 +71,14 @@ export function ParkingDashboard() {
     "12h" | "24h" | "7d" | "dynamic"
   >("dynamic");
   const [mounted, setMounted] = useState(false);
+  const [systemHealth, setSystemHealth] = useState<{
+    status: string;
+    data?: {
+      minutes_since_last_reading?: number;
+      active_garages?: number;
+    };
+    error?: string;
+  } | null>(null);
 
   const fetchGarageData = async () => {
     try {
@@ -172,6 +180,54 @@ export function ParkingDashboard() {
     await Promise.all(timeRanges.map((range) => fetchTrends(garageId, range)));
   };
 
+  const fetchSystemHealth = async () => {
+    try {
+      const response = await fetch("/api/health");
+
+      // Check if response is ok and contains JSON
+      if (!response.ok) {
+        throw new Error(`Health check failed: ${response.status}`);
+      }
+
+      const contentType = response.headers.get("content-type");
+      if (!contentType || !contentType.includes("application/json")) {
+        throw new Error("Health endpoint returned non-JSON response");
+      }
+
+      const health = await response.json();
+      setSystemHealth(health);
+    } catch (error) {
+      console.error("Error fetching system health:", error);
+      setSystemHealth({
+        status: "unhealthy",
+        error: error instanceof Error ? error.message : "Unknown error",
+      });
+    }
+  };
+
+  const triggerScrape = async () => {
+    try {
+      const response = await fetch("/api/scrape", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (response.ok) {
+        // Wait a moment then refresh data
+        setTimeout(() => {
+          refreshData();
+        }, 2000);
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error("Error triggering scrape:", error);
+      return false;
+    }
+  };
+
   const refreshData = async () => {
     setLoading(true);
     const fetchedGarages = await fetchGarageData();
@@ -183,6 +239,10 @@ export function ParkingDashboard() {
     });
 
     await Promise.all(garagePromises);
+
+    // Also fetch system health
+    await fetchSystemHealth();
+
     setLoading(false);
   };
 
@@ -235,6 +295,34 @@ export function ParkingDashboard() {
                   Last updated: {lastUpdated.toLocaleTimeString()}
                 </div>
               )}
+              {mounted && systemHealth && (
+                <Badge
+                  variant={
+                    systemHealth.status === "healthy"
+                      ? "default"
+                      : systemHealth.status === "degraded"
+                      ? "secondary"
+                      : "destructive"
+                  }
+                  className="flex items-center gap-1"
+                >
+                  <div
+                    className={`w-2 h-2 rounded-full ${
+                      systemHealth.status === "healthy"
+                        ? "bg-green-500"
+                        : systemHealth.status === "degraded"
+                        ? "bg-yellow-500"
+                        : "bg-red-500"
+                    }`}
+                  />
+                  System{" "}
+                  {systemHealth.status === "healthy"
+                    ? "Healthy"
+                    : systemHealth.status === "degraded"
+                    ? "Degraded"
+                    : "Unhealthy"}
+                </Badge>
+              )}
               <div className="flex items-center gap-2">
                 <ThemeToggle />
                 <Button onClick={refreshData} disabled={loading} size="sm">
@@ -253,6 +341,33 @@ export function ParkingDashboard() {
               </div>
             </div>
           </div>
+
+          {/* No Data Initialization */}
+          {garages.length === 0 && !loading && (
+            <div className="bg-card border border-border rounded-lg p-6 mb-8">
+              <div className="text-center">
+                <h3 className="text-lg font-semibold mb-2">
+                  No Parking Data Available
+                </h3>
+                <p className="text-muted-foreground mb-4">
+                  Initialize the system by collecting the first batch of parking
+                  data from SJSU.
+                </p>
+                <Button
+                  onClick={triggerScrape}
+                  disabled={loading}
+                  className="gap-2"
+                >
+                  <Activity className="h-4 w-4" />
+                  Initialize Data Collection
+                </Button>
+                <p className="text-sm text-muted-foreground mt-2">
+                  This will scrape current parking data and set up the
+                  dashboard.
+                </p>
+              </div>
+            </div>
+          )}
 
           {/* Overall Stats */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
