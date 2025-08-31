@@ -58,9 +58,11 @@ export function ParkingDashboard() {
   const [forecasts, setForecasts] = useState<Record<string, ForecastData[]>>(
     {}
   );
-  const [trends, setTrends] = useState<Record<string, TrendData>>({});
+  const [trends, setTrends] = useState<
+    Record<string, Record<string, TrendData>>
+  >({});
   const [historicalData, setHistoricalData] = useState<
-    Record<string, HistoricalDataPoint[]>
+    Record<string, Record<string, HistoricalDataPoint[]>>
   >({});
   const [loading, setLoading] = useState(true);
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
@@ -68,6 +70,7 @@ export function ParkingDashboard() {
   const [chartTimeRange, setChartTimeRange] = useState<
     "12h" | "24h" | "7d" | "dynamic"
   >("dynamic");
+  const [mounted, setMounted] = useState(false);
 
   const fetchGarageData = async () => {
     try {
@@ -82,10 +85,13 @@ export function ParkingDashboard() {
         if (!selectedGarage && data.garages.length > 0) {
           setSelectedGarage(data.garages[0].garage_id);
         }
+
+        return data.garages;
       }
     } catch (error) {
       console.error("Error fetching garage data:", error);
     }
+    return [];
   };
 
   const fetchForecast = async (garageId: string) => {
@@ -108,12 +114,11 @@ export function ParkingDashboard() {
 
   const fetchTrends = async (
     garageId: string,
-    timeRange?: "12h" | "24h" | "7d" | "dynamic"
+    timeRange: "12h" | "24h" | "7d" | "dynamic"
   ) => {
-    const range = timeRange || chartTimeRange;
     let days = 7;
 
-    switch (range) {
+    switch (timeRange) {
       case "12h":
         days = 0.5; // 12 hours
         break;
@@ -138,12 +143,18 @@ export function ParkingDashboard() {
       if (data.success) {
         setTrends((prev) => ({
           ...prev,
-          [garageId]: data.trend_analysis,
+          [garageId]: {
+            ...prev[garageId],
+            [timeRange]: data.trend_analysis,
+          },
         }));
 
         setHistoricalData((prev) => ({
           ...prev,
-          [garageId]: data.historical_data,
+          [garageId]: {
+            ...prev[garageId],
+            [timeRange]: data.historical_data,
+          },
         }));
       }
     } catch (error) {
@@ -151,20 +162,32 @@ export function ParkingDashboard() {
     }
   };
 
+  const fetchAllTrendsForGarage = async (garageId: string) => {
+    const timeRanges: Array<"12h" | "24h" | "7d" | "dynamic"> = [
+      "12h",
+      "24h",
+      "7d",
+      "dynamic",
+    ];
+    await Promise.all(timeRanges.map((range) => fetchTrends(garageId, range)));
+  };
+
   const refreshData = async () => {
     setLoading(true);
-    await fetchGarageData();
+    const fetchedGarages = await fetchGarageData();
 
-    // Fetch additional data for each garage
-    garages.forEach((garage) => {
-      fetchForecast(garage.garage_id);
-      fetchTrends(garage.garage_id, chartTimeRange);
+    // Fetch additional data for each garage - preload all time ranges
+    const garagePromises = fetchedGarages.map(async (garage: GarageData) => {
+      await fetchForecast(garage.garage_id);
+      await fetchAllTrendsForGarage(garage.garage_id);
     });
 
+    await Promise.all(garagePromises);
     setLoading(false);
   };
 
   useEffect(() => {
+    setMounted(true);
     refreshData();
 
     // Auto-refresh every 5 minutes
@@ -172,21 +195,6 @@ export function ParkingDashboard() {
 
     return () => clearInterval(interval);
   }, []);
-
-  // Fetch additional data when selected garage changes
-  useEffect(() => {
-    if (selectedGarage) {
-      fetchForecast(selectedGarage);
-      fetchTrends(selectedGarage, chartTimeRange);
-    }
-  }, [selectedGarage]);
-
-  // Fetch data when time range changes
-  useEffect(() => {
-    if (selectedGarage) {
-      fetchTrends(selectedGarage, chartTimeRange);
-    }
-  }, [chartTimeRange]);
 
   const getOverallStats = () => {
     if (garages.length === 0)
@@ -221,10 +229,12 @@ export function ParkingDashboard() {
               </p>
             </div>
             <div className="flex items-center gap-4 mt-4 lg:mt-0">
-              <div className="text-sm text-muted-foreground flex items-center gap-1">
-                <Clock className="h-4 w-4" />
-                Last updated: {lastUpdated.toLocaleTimeString()}
-              </div>
+              {mounted && (
+                <div className="text-sm text-muted-foreground flex items-center gap-1">
+                  <Clock className="h-4 w-4" />
+                  Last updated: {lastUpdated.toLocaleTimeString()}
+                </div>
+              )}
               <div className="flex items-center gap-2">
                 <ThemeToggle />
                 <Button onClick={refreshData} disabled={loading} size="sm">
@@ -308,7 +318,7 @@ export function ParkingDashboard() {
             <TabsContent value="overview" className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                 {garages.map((garage) => {
-                  const trend = trends[garage.garage_id];
+                  const trend = trends[garage.garage_id]?.["7d"]; // Use 7d as default for overview
                   const forecast = forecasts[garage.garage_id];
                   const nextHourPrediction =
                     forecast && forecast.length > 0
@@ -397,43 +407,44 @@ export function ParkingDashboard() {
                     </div>
                   </div>
 
-                  {selectedGarage && historicalData[selectedGarage] && (
-                    <ParkingChart
-                      title={`${
-                        garages.find((g) => g.garage_id === selectedGarage)
-                          ?.garage_name
-                      } - ${
-                        chartTimeRange === "12h"
-                          ? "12 Hour History"
-                          : chartTimeRange === "24h"
-                          ? "24 Hour History"
-                          : chartTimeRange === "7d"
-                          ? "7 Day History"
-                          : "Dynamic History"
-                      }`}
-                      data={historicalData[selectedGarage]}
-                      predictions={forecasts[selectedGarage]?.map((f) => ({
-                        timestamp: f.timestamp,
-                        predicted_utilization: f.predicted_utilization,
-                      }))}
-                      timeFormat={
-                        chartTimeRange === "12h"
-                          ? "HH:mm"
-                          : chartTimeRange === "24h"
-                          ? "MMM dd HH:mm"
-                          : chartTimeRange === "7d"
-                          ? "MMM dd HH:mm"
-                          : "MMM dd HH:mm"
-                      }
-                      height={400}
-                    />
-                  )}
+                  {selectedGarage &&
+                    historicalData[selectedGarage]?.[chartTimeRange] && (
+                      <ParkingChart
+                        title={`${
+                          garages.find((g) => g.garage_id === selectedGarage)
+                            ?.garage_name
+                        } - ${
+                          chartTimeRange === "12h"
+                            ? "12 Hour History"
+                            : chartTimeRange === "24h"
+                            ? "24 Hour History"
+                            : chartTimeRange === "7d"
+                            ? "7 Day History"
+                            : "Dynamic History"
+                        }`}
+                        data={historicalData[selectedGarage][chartTimeRange]}
+                        predictions={forecasts[selectedGarage]?.map((f) => ({
+                          timestamp: f.timestamp,
+                          predicted_utilization: f.predicted_utilization,
+                        }))}
+                        timeFormat={
+                          chartTimeRange === "12h"
+                            ? "HH:mm"
+                            : chartTimeRange === "24h"
+                            ? "MMM dd HH:mm"
+                            : chartTimeRange === "7d"
+                            ? "MMM dd HH:mm"
+                            : "MMM dd HH:mm"
+                        }
+                        height={400}
+                      />
+                    )}
                 </>
               )}
             </TabsContent>
 
             <TabsContent value="analytics" className="space-y-6">
-              {selectedGarage && trends[selectedGarage] && (
+              {selectedGarage && trends[selectedGarage]?.["7d"] && (
                 <Card>
                   <CardHeader>
                     <CardTitle>
@@ -453,17 +464,20 @@ export function ParkingDashboard() {
                         <span className="text-sm font-medium">Trend:</span>
                         <Badge
                           variant={
-                            trends[selectedGarage].trend === "increasing"
+                            trends[selectedGarage]["7d"].trend === "increasing"
                               ? "destructive"
-                              : trends[selectedGarage].trend === "decreasing"
+                              : trends[selectedGarage]["7d"].trend ===
+                                "decreasing"
                               ? "default"
                               : "secondary"
                           }
                         >
-                          {trends[selectedGarage].trend}
-                          {trends[selectedGarage].change_percentage !== 0 &&
+                          {trends[selectedGarage]["7d"].trend}
+                          {trends[selectedGarage]["7d"].change_percentage !==
+                            0 &&
                             ` (${(
-                              trends[selectedGarage].change_percentage ?? 0
+                              trends[selectedGarage]["7d"].change_percentage ??
+                              0
                             ).toFixed(1)}%)`}
                         </Badge>
                       </div>
@@ -473,30 +487,34 @@ export function ParkingDashboard() {
                       <div>
                         <h4 className="font-medium mb-2">Peak Hours</h4>
                         <div className="flex flex-wrap gap-1">
-                          {trends[selectedGarage].peak_hours.map((hour) => (
-                            <Badge
-                              key={hour}
-                              variant="outline"
-                              className="text-xs"
-                            >
-                              {hour}:00
-                            </Badge>
-                          ))}
+                          {trends[selectedGarage]["7d"].peak_hours.map(
+                            (hour) => (
+                              <Badge
+                                key={hour}
+                                variant="outline"
+                                className="text-xs"
+                              >
+                                {hour}:00
+                              </Badge>
+                            )
+                          )}
                         </div>
                       </div>
 
                       <div>
                         <h4 className="font-medium mb-2">Off-Peak Hours</h4>
                         <div className="flex flex-wrap gap-1">
-                          {trends[selectedGarage].off_peak_hours.map((hour) => (
-                            <Badge
-                              key={hour}
-                              variant="outline"
-                              className="text-xs"
-                            >
-                              {hour}:00
-                            </Badge>
-                          ))}
+                          {trends[selectedGarage]["7d"].off_peak_hours.map(
+                            (hour) => (
+                              <Badge
+                                key={hour}
+                                variant="outline"
+                                className="text-xs"
+                              >
+                                {hour}:00
+                              </Badge>
+                            )
+                          )}
                         </div>
                       </div>
                     </div>

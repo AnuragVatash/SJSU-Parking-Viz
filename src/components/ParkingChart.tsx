@@ -1,7 +1,23 @@
 "use client";
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Area, AreaChart } from "recharts";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  Area,
+  AreaChart,
+} from "recharts";
 import { format, parseISO } from "date-fns";
 
 interface ChartDataPoint {
@@ -22,31 +38,33 @@ interface ParkingChartProps {
   height?: number;
 }
 
-export function ParkingChart({ 
-  title, 
-  data, 
-  predictions = [], 
+export function ParkingChart({
+  title,
+  data,
+  predictions = [],
   showMinMax = false,
   timeFormat = "MMM dd HH:mm",
-  height = 400 
+  height = 400,
 }: ParkingChartProps) {
-  
   // Combine historical data with predictions
   const combinedData = [
-    ...data.map(d => ({
+    ...data.map((d) => ({
       ...d,
       timestamp: d.timestamp,
-      type: 'historical' as const
+      type: "historical" as const,
     })),
-    ...predictions.map(d => ({
+    ...predictions.map((d) => ({
       ...d,
       timestamp: d.timestamp,
-      type: 'prediction' as const
-    }))
-  ].sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+      type: "prediction" as const,
+    })),
+  ].sort(
+    (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+  );
 
   const formatTooltipValue = (value: any, name: string) => {
-    if (value === null || value === undefined || isNaN(Number(value))) return ['--', name];
+    if (value === null || value === undefined || isNaN(Number(value)))
+      return ["--", name];
     return [`${Number(value).toFixed(1)}%`, name];
   };
 
@@ -67,23 +85,26 @@ export function ParkingChart({
             {formatTooltipLabel(label)}
           </p>
           {payload.map((item: any, index: number) => (
-            <div key={index} className="flex justify-between items-center gap-4">
-              <span 
+            <div
+              key={index}
+              className="flex justify-between items-center gap-4"
+            >
+              <span
                 className="text-sm flex items-center gap-2"
                 style={{ color: item.color }}
               >
-                <div 
-                  className="w-2 h-2 rounded-full" 
+                <div
+                  className="w-2 h-2 rounded-full"
                   style={{ backgroundColor: item.color }}
                 />
                 {item.name}:
               </span>
               <span className="font-medium text-card-foreground">
-                {formatTooltipValue(item.value, '')[0]}
+                {formatTooltipValue(item.value, "")[0]}
               </span>
             </div>
           ))}
-          {dataPoint.type === 'prediction' && (
+          {dataPoint.type === "prediction" && (
             <div className="mt-2 pt-2 border-t border-border">
               <span className="text-xs text-muted-foreground">Predicted</span>
             </div>
@@ -114,15 +135,16 @@ export function ParkingChart({
       <CardHeader>
         <CardTitle>{title}</CardTitle>
         <CardDescription>
-          Parking utilization over time {predictions.length > 0 && '(including predictions)'}
+          Parking utilization over time{" "}
+          {predictions.length > 0 && "(including predictions)"}
         </CardDescription>
       </CardHeader>
       <CardContent>
         <ResponsiveContainer width="100%" height={height}>
           {showMinMax ? (
-            <AreaChart data={combinedData}>
+            <AreaChart data={combinedData} isAnimationActive={false}>
               <CartesianGrid strokeDasharray="3 3" />
-              <XAxis 
+              <XAxis
                 dataKey="timestamp"
                 tickFormatter={(timestamp) => {
                   try {
@@ -132,12 +154,9 @@ export function ParkingChart({
                   }
                 }}
               />
-              <YAxis 
-                domain={[0, 100]}
-                tickFormatter={(value) => `${value}%`}
-              />
+              <YAxis domain={[0, 100]} tickFormatter={(value) => `${value}%`} />
               <Tooltip content={<CustomTooltip />} />
-              
+
               <Area
                 type="monotone"
                 dataKey="max_utilization"
@@ -146,6 +165,7 @@ export function ParkingChart({
                 fill="#8884d8"
                 fillOpacity={0.1}
                 name="Max Utilization"
+                isAnimationActive={false}
               />
               <Area
                 type="monotone"
@@ -155,6 +175,7 @@ export function ParkingChart({
                 fill="#82ca9d"
                 fillOpacity={0.1}
                 name="Min Utilization"
+                isAnimationActive={false}
               />
               <Line
                 type="monotone"
@@ -163,12 +184,13 @@ export function ParkingChart({
                 strokeWidth={2}
                 dot={false}
                 name="Average Utilization"
+                isAnimationActive={false}
               />
             </AreaChart>
           ) : (
-            <LineChart data={combinedData}>
+            <LineChart data={combinedData} isAnimationActive={false}>
               <CartesianGrid strokeDasharray="3 3" />
-              <XAxis 
+              <XAxis
                 dataKey="timestamp"
                 tickFormatter={(timestamp) => {
                   try {
@@ -178,12 +200,9 @@ export function ParkingChart({
                   }
                 }}
               />
-              <YAxis 
-                domain={[0, 100]}
-                tickFormatter={(value) => `${value}%`}
-              />
+              <YAxis domain={[0, 100]} tickFormatter={(value) => `${value}%`} />
               <Tooltip content={<CustomTooltip />} />
-              
+
               <Line
                 type="monotone"
                 dataKey="avg_utilization"
@@ -192,6 +211,7 @@ export function ParkingChart({
                 dot={false}
                 name="Current Utilization"
                 connectNulls={false}
+                isAnimationActive={false}
               />
               <Line
                 type="monotone"
@@ -201,6 +221,7 @@ export function ParkingChart({
                 dot={false}
                 name="Last Reading"
                 connectNulls={false}
+                isAnimationActive={false}
               />
               {predictions.length > 0 && (
                 <Line
@@ -212,6 +233,7 @@ export function ParkingChart({
                   dot={false}
                   name="Prediction"
                   connectNulls={true}
+                  isAnimationActive={false}
                 />
               )}
             </LineChart>
