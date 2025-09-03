@@ -79,17 +79,17 @@ export function GarageCard({
   const progressColor = getUtilizationColor(level);
 
   return (
-    <Card className="w-full hover:shadow-lg transition-shadow duration-200">
+    <Card className="w-full hover:shadow-lg transition-shadow duration-200" role="article" aria-labelledby={`garage-${garage_id}-title`}>
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-lg font-semibold flex items-center gap-2">
-            <Car className="h-5 w-5 text-primary" />
+          <CardTitle id={`garage-${garage_id}-title`} className="text-lg font-semibold flex items-center gap-2">
+            <Car className="h-5 w-5 text-primary" aria-hidden="true" />
             {garage_name}
             {getUtilizationBadge(occupied_percentage ?? 0)}
           </CardTitle>
           {trend && (
             <Tooltip>
-              <TooltipTrigger>
+              <TooltipTrigger aria-label={`Trend: ${trend}`}>
                 {getTrendIcon(trend)}
               </TooltipTrigger>
               <TooltipContent>
@@ -98,8 +98,8 @@ export function GarageCard({
             </Tooltip>
           )}
         </div>
-        <CardDescription className="flex items-center gap-1">
-          <MapPin className="h-4 w-4" />
+        <CardDescription className="flex items-center gap-1" aria-label={`Located at ${address}`}>
+          <MapPin className="h-4 w-4" aria-hidden="true" />
           {address}
         </CardDescription>
       </CardHeader>
@@ -107,7 +107,7 @@ export function GarageCard({
       <CardContent className="space-y-4">
         <div className="space-y-2">
           <div className="flex justify-between items-center">
-            <span className="text-2xl font-bold">
+            <span className="text-2xl font-bold" aria-label={`Current utilization: ${(occupied_percentage ?? 0).toFixed(1)} percent`}>
               {(occupied_percentage ?? 0).toFixed(1)}%
             </span>
             {capacity && (
@@ -116,25 +116,37 @@ export function GarageCard({
               </span>
             )}
           </div>
-          
-          <Progress 
-            value={occupied_percentage ?? 0} 
-            className={`h-3 ${progressColor}`}
-          />
+
+          <div
+            className="relative h-3 w-full overflow-hidden rounded-full bg-secondary"
+            role="meter"
+            aria-valuenow={occupied_percentage ?? 0}
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-label={`Parking utilization meter showing ${(occupied_percentage ?? 0).toFixed(1)} percent`}
+          >
+            <div
+              className={`h-full ${progressColor} transition-all duration-300 ease-in-out`}
+              style={{ width: `${occupied_percentage ?? 0}%` }}
+            />
+          </div>
         </div>
 
         {nextHourPrediction !== undefined && (
           <div className="pt-2 border-t border-border">
             <div className="flex justify-between items-center text-sm">
               <span className="text-muted-foreground">Next hour prediction:</span>
-              <span className="font-medium">
+              <span className="font-medium" aria-label={`Predicted utilization: ${(nextHourPrediction ?? 0).toFixed(1)} percent${
+                (nextHourPrediction ?? 0) > (occupied_percentage ?? 0) ? ' - increasing' :
+                (nextHourPrediction ?? 0) < (occupied_percentage ?? 0) ? ' - decreasing' : ' - stable'
+              }`}>
                 {(nextHourPrediction ?? 0).toFixed(1)}%
                 {(nextHourPrediction ?? 0) > (occupied_percentage ?? 0) ? (
-                  <TrendingUp className="inline h-3 w-3 ml-1 text-red-500" />
+                  <TrendingUp className="inline h-3 w-3 ml-1 text-red-500" aria-label="Trending upward" />
                 ) : (nextHourPrediction ?? 0) < (occupied_percentage ?? 0) ? (
-                  <TrendingDown className="inline h-3 w-3 ml-1 text-green-500" />
+                  <TrendingDown className="inline h-3 w-3 ml-1 text-green-500" aria-label="Trending downward" />
                 ) : (
-                  <Minus className="inline h-3 w-3 ml-1 text-blue-500" />
+                  <Minus className="inline h-3 w-3 ml-1 text-blue-500" aria-label="Stable trend" />
                 )}
               </span>
             </div>
@@ -142,8 +154,13 @@ export function GarageCard({
         )}
 
         <div className="flex items-center gap-1 text-xs text-muted-foreground">
-          <Clock className="h-3 w-3" />
-          Updated {formatDistanceToNow(new Date(last_updated))} ago
+          <Clock className="h-3 w-3" aria-hidden="true" />
+          <time
+            dateTime={last_updated}
+            aria-label={`Last updated ${formatDistanceToNow(new Date(last_updated))} ago`}
+          >
+            Updated {formatDistanceToNow(new Date(last_updated))} ago
+          </time>
         </div>
       </CardContent>
     </Card>

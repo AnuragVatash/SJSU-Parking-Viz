@@ -61,34 +61,37 @@ export default function StatusPage() {
   return (
     <div className="min-h-screen bg-background p-6">
       <div className="container mx-auto max-w-4xl">
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-4">
+        <header className="mb-8">
+          <nav className="flex items-center justify-between mb-4" role="navigation" aria-label="Status page navigation">
             <Button
               variant="ghost"
               size="sm"
               onClick={() => window.location.href = '/'}
               className="flex items-center gap-2 text-muted-foreground hover:text-foreground"
+              aria-label="Return to main dashboard"
             >
-              <ArrowLeft className="h-4 w-4" />
+              <ArrowLeft className="h-4 w-4" aria-hidden="true" />
               Back to Dashboard
             </Button>
             <ThemeToggle />
-          </div>
+          </nav>
           <div>
             <h1 className="text-4xl font-bold mb-2">System Status</h1>
-            <p className="text-muted-foreground">SJSU Parking Visualization System Health Check</p>
+            <p className="text-muted-foreground" id="status-description">
+              SJSU Parking Visualization System Health Check
+            </p>
           </div>
-        </div>
+        </header>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <main className="grid grid-cols-1 md:grid-cols-2 gap-6" role="main" aria-labelledby="status-description">
           {/* QStash Status */}
-          <Card>
+          <Card role="region" aria-labelledby="qstash-status-title">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
+              <CardTitle id="qstash-status-title" className="flex items-center gap-2">
                 {status?.configured ? (
-                  <CheckCircle className="h-5 w-5 text-green-500" />
+                  <CheckCircle className="h-5 w-5 text-green-500" aria-label="System configured successfully" />
                 ) : (
-                  <XCircle className="h-5 w-5 text-red-500" />
+                  <XCircle className="h-5 w-5 text-red-500" aria-label="System configuration required" />
                 )}
                 QStash Scheduler
               </CardTitle>
@@ -127,10 +130,10 @@ export default function StatusPage() {
           </Card>
 
           {/* Schedule Details */}
-          <Card>
+          <Card role="region" aria-labelledby="schedule-details-title">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Clock className="h-5 w-5" />
+              <CardTitle id="schedule-details-title" className="flex items-center gap-2">
+                <Clock className="h-5 w-5" aria-hidden="true" />
                 Schedule Details
               </CardTitle>
               <CardDescription>
@@ -162,10 +165,10 @@ export default function StatusPage() {
           </Card>
 
           {/* Quick Stats */}
-          <Card className="md:col-span-2">
+          <Card className="md:col-span-2" role="region" aria-labelledby="system-overview-title">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Activity className="h-5 w-5" />
+              <CardTitle id="system-overview-title" className="flex items-center gap-2">
+                <Activity className="h-5 w-5" aria-hidden="true" />
                 System Overview
               </CardTitle>
             </CardHeader>
@@ -194,9 +197,9 @@ export default function StatusPage() {
 
         {/* Setup Instructions */}
         {!status?.configured && (
-          <Card className="mt-6 border-orange-200 bg-orange-50 dark:border-orange-800 dark:bg-orange-950">
+          <Card className="mt-6 border-orange-200 bg-orange-50 dark:border-orange-800 dark:bg-orange-950" role="region" aria-labelledby="setup-required-title">
             <CardHeader>
-              <CardTitle className="text-orange-800 dark:text-orange-200">Setup Required</CardTitle>
+              <CardTitle id="setup-required-title" className="text-orange-800 dark:text-orange-200">Setup Required</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div>

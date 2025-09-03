@@ -158,60 +158,75 @@ export function ParkingDashboard() {
     <TooltipProvider>
       <div className="min-h-screen bg-background">
         <div className="container mx-auto py-6 px-4">
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-8">
+          <header className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-8" role="banner">
             <div>
-              <h1 className="text-4xl font-bold tracking-tight mb-2">
+              <h1 className="text-4xl font-bold tracking-tight mb-2" id="dashboard-title">
                 SJSU Parking Dashboard
               </h1>
-              <p className="text-lg text-muted-foreground flex items-center gap-2">
-                <Activity className="h-5 w-5" />
-                Real-time garage utilization and predictions
+              <p className="text-lg text-muted-foreground flex items-center gap-2" aria-describedby="dashboard-description">
+                <Activity className="h-5 w-5" aria-hidden="true" />
+                <span id="dashboard-description">Real-time garage utilization and predictions</span>
               </p>
             </div>
-            <div className="flex items-center gap-4 mt-4 lg:mt-0">
+            <nav className="flex items-center gap-4 mt-4 lg:mt-0" role="navigation" aria-label="Dashboard controls">
               <div className="text-sm text-muted-foreground flex items-center gap-1">
-                <Clock className="h-4 w-4" />
-                Last updated: {lastUpdated.toLocaleTimeString()}
+                <Clock className="h-4 w-4" aria-hidden="true" />
+                <time aria-live="polite" aria-label="Last updated time">
+                  Last updated: {lastUpdated.toLocaleTimeString()}
+                </time>
               </div>
               <div className="flex items-center gap-2">
                 <ThemeToggle />
-                <Button onClick={refreshData} disabled={loading} size="sm">
-                  <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
-                  Refresh
+                <Button
+                  onClick={refreshData}
+                  disabled={loading}
+                  size="sm"
+                  aria-label={loading ? "Refreshing data..." : "Refresh dashboard data"}
+                  aria-describedby="refresh-status"
+                >
+                  <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} aria-hidden="true" />
+                  <span id="refresh-status">{loading ? 'Refreshing...' : 'Refresh'}</span>
                 </Button>
                 <Button
                   onClick={() => window.open('/status', '_blank')}
                   variant="outline"
                   size="sm"
+                  aria-label="Open system status page in new tab"
                 >
                   System Status
                 </Button>
               </div>
-            </div>
-          </div>
+            </nav>
+          </header>
 
           {/* Overall Stats */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+          <section className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8" aria-labelledby="stats-heading">
+            <h2 id="stats-heading" className="sr-only">Overall Parking Statistics</h2>
+
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Total Garages</CardTitle>
-                <MapPin className="h-4 w-4 text-muted-foreground" />
+                <MapPin className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{garages.length}</div>
+                <div className="text-2xl font-bold" aria-label={`${garages.length} total garages`}>
+                  {garages.length}
+                </div>
                 <p className="text-xs text-muted-foreground">
                   Active parking facilities
                 </p>
               </CardContent>
             </Card>
-            
+
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Average Utilization</CardTitle>
-                <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                <TrendingUp className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{(avgUtilization ?? 0).toFixed(1)}%</div>
+                <div className="text-2xl font-bold" aria-label={`Average utilization ${(avgUtilization ?? 0).toFixed(1)} percent`}>
+                  {(avgUtilization ?? 0).toFixed(1)}%
+                </div>
                 <p className="text-xs text-muted-foreground">
                   Across all garages
                 </p>
@@ -222,31 +237,41 @@ export function ParkingDashboard() {
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium">Total Capacity</CardTitle>
-                  <Activity className="h-4 w-4 text-muted-foreground" />
+                  <Activity className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">{occupiedSpaces} / {totalSpaces}</div>
+                  <div className="text-2xl font-bold" aria-label={`${occupiedSpaces} occupied out of ${totalSpaces} total spaces`}>
+                    {occupiedSpaces} / {totalSpaces}
+                  </div>
                   <p className="text-xs text-muted-foreground">
                     Occupied / Total spaces
                   </p>
                 </CardContent>
               </Card>
             )}
-          </div>
+          </section>
 
-          <Tabs defaultValue="overview" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="overview">Overview</TabsTrigger>
-              <TabsTrigger value="detailed">Detailed View</TabsTrigger>
-              <TabsTrigger value="analytics">Analytics</TabsTrigger>
+          <Tabs defaultValue="overview" className="space-y-6" aria-labelledby="dashboard-navigation">
+            <h2 id="dashboard-navigation" className="sr-only">Dashboard Navigation</h2>
+            <TabsList className="grid w-full grid-cols-3" role="tablist" aria-label="Dashboard views">
+              <TabsTrigger value="overview" aria-label="Overview of all parking garages">
+                Overview
+              </TabsTrigger>
+              <TabsTrigger value="detailed" aria-label="Detailed view with charts and predictions">
+                Detailed View
+              </TabsTrigger>
+              <TabsTrigger value="analytics" aria-label="Analytics and usage patterns">
+                Analytics
+              </TabsTrigger>
             </TabsList>
 
-            <TabsContent value="overview" className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+            <TabsContent value="overview" className="space-y-6" role="tabpanel" aria-labelledby="overview-tab">
+              <h3 id="overview-tab" className="sr-only">Overview - All Parking Garages</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6" role="grid" aria-label="Parking garage overview cards">
                 {garages.map(garage => {
                   const trend = trends[garage.garage_id];
                   const forecast = forecasts[garage.garage_id];
-                  const nextHourPrediction = forecast && forecast.length > 0 
+                  const nextHourPrediction = forecast && forecast.length > 0
                     ? forecast.find(f => new Date(f.timestamp).getTime() > Date.now() + 60 * 60 * 1000)?.predicted_utilization
                     : undefined;
 
@@ -262,43 +287,49 @@ export function ParkingDashboard() {
               </div>
             </TabsContent>
 
-            <TabsContent value="detailed" className="space-y-6">
+            <TabsContent value="detailed" className="space-y-6" role="tabpanel" aria-labelledby="detailed-tab">
+              <h3 id="detailed-tab" className="sr-only">Detailed View - Charts and Predictions</h3>
               {garages.length > 0 && (
                 <>
-                  <div className="flex flex-wrap gap-2 mb-4">
+                  <nav className="flex flex-wrap gap-2 mb-4" role="navigation" aria-label="Garage selection">
                     {garages.map(garage => (
                       <Button
                         key={garage.garage_id}
                         variant={selectedGarage === garage.garage_id ? "default" : "outline"}
                         size="sm"
                         onClick={() => setSelectedGarage(garage.garage_id)}
+                        aria-pressed={selectedGarage === garage.garage_id}
+                        aria-label={`Select ${garage.garage_name} for detailed view`}
                       >
                         {garage.garage_name}
                       </Button>
                     ))}
-                  </div>
+                  </nav>
 
                   {selectedGarage && historicalData[selectedGarage] && (
-                    <ParkingChart
-                      title={`${garages.find(g => g.garage_id === selectedGarage)?.garage_name} - 7 Day History`}
-                      data={historicalData[selectedGarage]}
-                      predictions={forecasts[selectedGarage]?.map(f => ({
-                        timestamp: f.timestamp,
-                        predicted_utilization: f.predicted_utilization
-                      }))}
-                      timeFormat="MMM dd HH:mm"
-                      height={400}
-                    />
+                    <section aria-labelledby="chart-title">
+                      <ParkingChart
+                        title={`${garages.find(g => g.garage_id === selectedGarage)?.garage_name} - 7 Day History`}
+                        data={historicalData[selectedGarage]}
+                        predictions={forecasts[selectedGarage]?.map(f => ({
+                          timestamp: f.timestamp,
+                          predicted_utilization: f.predicted_utilization
+                        }))}
+                        timeFormat="MMM dd HH:mm"
+                        height={400}
+                      />
+                    </section>
                   )}
                 </>
               )}
             </TabsContent>
 
-            <TabsContent value="analytics" className="space-y-6">
+            <TabsContent value="analytics" className="space-y-6" role="tabpanel" aria-labelledby="analytics-tab">
+              <h3 id="analytics-tab" className="sr-only">Analytics - Usage Patterns and Trends</h3>
               {selectedGarage && trends[selectedGarage] && (
                 <Card>
                   <CardHeader>
-                    <CardTitle>
+                    <CardTitle id="analytics-title">
                       {garages.find(g => g.garage_id === selectedGarage)?.garage_name} Analytics
                     </CardTitle>
                     <CardDescription>
@@ -309,40 +340,46 @@ export function ParkingDashboard() {
                     <div className="flex items-center gap-4 flex-wrap">
                       <div className="flex items-center gap-2">
                         <span className="text-sm font-medium">Trend:</span>
-                        <Badge variant={
-                          trends[selectedGarage].trend === 'increasing' ? 'destructive' :
-                          trends[selectedGarage].trend === 'decreasing' ? 'default' : 'secondary'
-                        }>
+                        <Badge
+                          variant={
+                            trends[selectedGarage].trend === 'increasing' ? 'destructive' :
+                            trends[selectedGarage].trend === 'decreasing' ? 'default' : 'secondary'
+                          }
+                          aria-label={`Current trend: ${trends[selectedGarage].trend}${
+                            trends[selectedGarage].change_percentage !== 0 ?
+                            ` with ${(trends[selectedGarage].change_percentage ?? 0).toFixed(1)} percent change` : ''
+                          }`}
+                        >
                           {trends[selectedGarage].trend}
-                          {trends[selectedGarage].change_percentage !== 0 && 
+                          {trends[selectedGarage].change_percentage !== 0 &&
                             ` (${(trends[selectedGarage].change_percentage ?? 0).toFixed(1)}%)`
                           }
                         </Badge>
                       </div>
                     </div>
-                    
+
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <h4 className="font-medium mb-2">Peak Hours</h4>
-                        <div className="flex flex-wrap gap-1">
+                      <section aria-labelledby="peak-hours-heading">
+                        <h4 id="peak-hours-heading" className="font-medium mb-2">Peak Hours</h4>
+                        <div className="flex flex-wrap gap-1" role="list" aria-label="Peak usage hours">
                           {trends[selectedGarage].peak_hours.map(hour => (
-                            <Badge key={hour} variant="outline" className="text-xs">
+                            <Badge key={hour} variant="outline" className="text-xs" role="listitem">
                               {hour}:00
                             </Badge>
                           ))}
                         </div>
-                      </div>
-                      
-                      <div>
-                        <h4 className="font-medium mb-2">Off-Peak Hours</h4>
-                        <div className="flex flex-wrap gap-1">
+                      </section>
+
+                      <section aria-labelledby="off-peak-hours-heading">
+                        <h4 id="off-peak-hours-heading" className="font-medium mb-2">Off-Peak Hours</h4>
+                        <div className="flex flex-wrap gap-1" role="list" aria-label="Off-peak usage hours">
                           {trends[selectedGarage].off_peak_hours.map(hour => (
-                            <Badge key={hour} variant="outline" className="text-xs">
+                            <Badge key={hour} variant="outline" className="text-xs" role="listitem">
                               {hour}:00
                             </Badge>
                           ))}
                         </div>
-                      </div>
+                      </section>
                     </div>
                   </CardContent>
                 </Card>

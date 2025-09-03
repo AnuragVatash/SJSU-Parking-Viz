@@ -68,3 +68,64 @@
     font-feature-settings: "rlig" 1, "calt" 1;
   }
 }
+
+/* Accessibility improvements */
+@layer utilities {
+  /* Enhanced focus indicators */
+  .focus-visible-enhanced:focus-visible {
+    @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background;
+  }
+
+  /* Skip link styles */
+  .skip-link {
+    @apply absolute left-4 top-4 z-50 bg-primary text-primary-foreground px-4 py-2 rounded-md shadow-lg transform -translate-y-full transition-transform focus:translate-y-0;
+  }
+
+  /* High contrast focus for better visibility */
+  .focus-high-contrast:focus-visible {
+    @apply outline-2 outline-offset-2 outline-primary;
+  }
+
+  /* Screen reader only content */
+  .sr-only {
+    @apply absolute w-px h-px p-0 -m-px overflow-hidden whitespace-nowrap border-0;
+  }
+
+  /* Focus not screen reader only - for skip links */
+  .focus\:not-sr-only:focus:not(:focus-visible) {
+    @apply sr-only;
+  }
+  .focus\:not-sr-only:focus:focus-visible {
+    @apply not-sr-only;
+  }
+
+  /* Reduced motion preferences */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+
+  /* High contrast mode support */
+  @media (prefers-contrast: high) {
+    .text-muted-foreground {
+      @apply text-foreground;
+    }
+  }
+
+  /* Ensure minimum touch targets */
+  button,
+  [role="button"],
+  input,
+  select,
+  textarea,
+  [tabindex]:not([tabindex="-1"]) {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}

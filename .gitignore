@@ -63,3 +63,26 @@ pids
 
 # Yarn Integrity file
 .yarn-integrity
+
+# Temporary files and reports
+Skynet-Technologies-Free-Accessibility-Checker-Report.pdf
+*.tmp
+*.temp
+
+# Optional: Regenerable config files (uncomment if you want to ignore these)
+# postcss.config.mjs
+# eslint.config.mjs
+
+# Optional: Build artifacts
+dist/
+build/
+
+# Cache directories
+.cache/
+.parcel-cache/
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
