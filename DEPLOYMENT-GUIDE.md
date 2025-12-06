@@ -32,7 +32,7 @@
 
 ## 🗄️ **Step 2: Database Setup**
 
-You already have **Neon PostgreSQL** configured with TimescaleDB ✅
+You already have **Neon PostgreSQL** configured ✅
 
 ---
 

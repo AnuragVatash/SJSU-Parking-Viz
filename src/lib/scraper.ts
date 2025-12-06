@@ -103,6 +103,12 @@ export class ParkingScraper {
       })).get();
       const garageFullness = $('.garage__fullness').map((i, el) => {
         const fullnessText = $(el).text().trim();
+
+        // If the garage is marked as "Full", treat it as 100%
+        if (fullnessText.toLowerCase() === 'full') {
+          return 100;
+        }
+
         return parseFloat(fullnessText.replace('%', '').trim()) || 0;
       }).get();
       
