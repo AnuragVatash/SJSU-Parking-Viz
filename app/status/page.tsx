@@ -164,38 +164,49 @@ export default function StatusPage() {
             </CardContent>
           </Card>
 
-          {/* Quick Stats */}
-          <Card className="md:col-span-2" role="region" aria-labelledby="system-overview-title">
-            <CardHeader>
-              <CardTitle id="system-overview-title" className="flex items-center gap-2">
-                <Activity className="h-5 w-5" aria-hidden="true" />
-                System Overview
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="text-center">
-                  <div className="text-2xl font-bold">3min</div>
-                  <div className="text-xs text-muted-foreground">Collection Interval</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-2xl font-bold">480</div>
-                  <div className="text-xs text-muted-foreground">Scrapes per Day</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-2xl font-bold">24/7</div>
-                  <div className="text-xs text-muted-foreground">Always Running</div>
-                </div>
-                <div className="text-center">
-                  <div className="text-2xl font-bold">4</div>
-                  <div className="text-xs text-muted-foreground">SJSU Garages</div>
+        {/* Quick Stats */}
+        <Card
+          className="md:col-span-2"
+          role="region"
+          aria-labelledby="system-overview-title"
+        >
+          <CardHeader>
+            <CardTitle
+              id="system-overview-title"
+              className="flex items-center gap-2"
+            >
+              <Activity className="h-5 w-5" aria-hidden="true" />
+              System Overview
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="text-center">
+                <div className="text-2xl font-bold">3min</div>
+                <div className="text-xs text-muted-foreground">
+                  Collection Interval
                 </div>
               </div>
-            </CardContent>
-          </Card>
-        </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold">480</div>
+                <div className="text-xs text-muted-foreground">
+                  Scrapes per Day
+                </div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold">24/7</div>
+                <div className="text-xs text-muted-foreground">Always Running</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold">4</div>
+                <div className="text-xs text-muted-foreground">SJSU Garages</div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
 
-        {/* Setup Instructions */}
+      {/* Setup Instructions */}
         {!status?.configured && (
           <Card className="mt-6 border-orange-200 bg-orange-50 dark:border-orange-800 dark:bg-orange-950" role="region" aria-labelledby="setup-required-title">
             <CardHeader>
