@@ -164,81 +164,99 @@ export default function StatusPage() {
             </CardContent>
           </Card>
 
-        {/* Quick Stats */}
-        <Card
-          className="md:col-span-2"
-          role="region"
-          aria-labelledby="system-overview-title"
-        >
-          <CardHeader>
-            <CardTitle
-              id="system-overview-title"
-              className="flex items-center gap-2"
-            >
-              <Activity className="h-5 w-5" aria-hidden="true" />
-              System Overview
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="text-center">
-                <div className="text-2xl font-bold">3min</div>
-                <div className="text-xs text-muted-foreground">
-                  Collection Interval
-                </div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold">480</div>
-                <div className="text-xs text-muted-foreground">
-                  Scrapes per Day
-                </div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold">24/7</div>
-                <div className="text-xs text-muted-foreground">Always Running</div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold">4</div>
-                <div className="text-xs text-muted-foreground">SJSU Garages</div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Setup Instructions */}
-        {!status?.configured && (
-          <Card className="mt-6 border-orange-200 bg-orange-50 dark:border-orange-800 dark:bg-orange-950" role="region" aria-labelledby="setup-required-title">
+          {/* Quick Stats */}
+          <Card
+            className="md:col-span-2"
+            role="region"
+            aria-labelledby="system-overview-title"
+          >
             <CardHeader>
-              <CardTitle id="setup-required-title" className="text-orange-800 dark:text-orange-200">Setup Required</CardTitle>
+              <CardTitle
+                id="system-overview-title"
+                className="flex items-center gap-2"
+              >
+                <Activity className="h-5 w-5" aria-hidden="true" />
+                System Overview
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="text-center">
+                  <div className="text-2xl font-bold">3min</div>
+                  <div className="text-xs text-muted-foreground">
+                    Collection Interval
+                  </div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold">480</div>
+                  <div className="text-xs text-muted-foreground">
+                    Scrapes per Day
+                  </div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold">24/7</div>
+                  <div className="text-xs text-muted-foreground">Always Running</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold">4</div>
+                  <div className="text-xs text-muted-foreground">SJSU Garages</div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </main>
+
+        {/* Setup Instructions */}
+        {!status?.configured && (
+          <Card
+            className="mt-6 border-orange-200 bg-orange-50 dark:border-orange-800 dark:bg-orange-950"
+            role="region"
+            aria-labelledby="setup-required-title"
+          >
+            <CardHeader>
+              <CardTitle
+                id="setup-required-title"
+                className="text-orange-800 dark:text-orange-200"
+              >
+                Setup Required
+              </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
                 <h3 className="font-semibold mb-2">1. Get QStash Account</h3>
                 <p className="text-sm text-muted-foreground mb-2">
-                  Visit <a href="https://console.upstash.com/qstash" target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">
+                  Visit{" "}
+                  <a
+                    href="https://console.upstash.com/qstash"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-500 hover:underline"
+                  >
                     Upstash QStash Console
-                  </a> and create a free account.
+                  </a>{" "}
+                  and create a free account.
                 </p>
               </div>
-              
+
               <div>
-                <h3 className="font-semibold mb-2">2. Add Environment Variables to Vercel</h3>
-                <div className="bg-muted p-3 rounded text-xs font-mono">
-                  QSTASH_TOKEN=your_token_here<br/>
-                  QSTASH_CURRENT_SIGNING_KEY=your_current_key<br/>
-                  QSTASH_NEXT_SIGNING_KEY=your_next_key
+                <h3 className="font-semibold mb-2">
+                  2. Add Environment Variables to Vercel
+                </h3>
+                <div className="bg-muted p-3 rounded text-xs font-mono whitespace-pre">
+QSTASH_TOKEN=your_token_here
+QSTASH_CURRENT_SIGNING_KEY=your_current_key
+QSTASH_NEXT_SIGNING_KEY=your_next_key
                 </div>
               </div>
-              
+
               <div>
                 <h3 className="font-semibold mb-2">3. One-Time Setup</h3>
                 <p className="text-sm text-muted-foreground">
                   After deployment, run this command once to start 24/7 scheduling:
                 </p>
-                <div className="bg-muted p-3 rounded text-xs font-mono mt-2">
-                  curl -X POST https://your-app.vercel.app/api/setup-scheduler \<br/>
-                  &nbsp;&nbsp;-H "Authorization: Bearer your-cron-secret"
+                <div className="bg-muted p-3 rounded text-xs font-mono mt-2 whitespace-pre">
+curl -X POST https://your-app.vercel.app/api/setup-scheduler \
+  -H "Authorization: Bearer your-cron-secret"
                 </div>
               </div>
             </CardContent>
